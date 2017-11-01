@@ -28,6 +28,9 @@ uint32_t get_read_length(FILE *f){
     int ch, header_bytes = 0;
     char buffer[10000]; // 2 KB buffer
     
+    uint8_t keep = 1;
+    int i, j;
+    
     // We use this opportunity to remove the headers
     // getc coge caracter, fgets coge 2048 o hasta salto linea.
     // con esto simplemente calculamos los bytes de header (empiezan con @),
@@ -40,8 +43,23 @@ uint32_t get_read_length(FILE *f){
     // rewind the file pointer to be at the beginning of the first read
     fseek(f, header_bytes, SEEK_SET);
     
-    // Extract the first read
-    fscanf(f, "%*s %*d %*s %*d %*d %*s %*s %*d %*d %s", buffer);
+    while (keep){
+        // Extract the first read
+        keep = 0;
+        // first extract the cigar to check it doesn't have Hard clips (H)
+        fscanf(f, "%*s %*d %*s %*d %*d %s", buffer);
+        for (i=0;i<strlen(buffer);i++){
+            if (!strncmp(&buffer[i],"H",1)){
+                keep = 1;
+                fgets(buffer, 10000, f); // finish reading line
+                break;
+            }
+        }
+    }
+    // Now we are in a read with no HARD clips, so we get the read and its length
+    fscanf(f, "%*s %*d %*d %s", buffer);
+    
+    //fscanf(f, "%*s %*d %*s %*d %*d %*s %*s %*d %*d %s", buffer);
     
     // rewind the file pointer to be at the beginning of the first read
     fseek(f, header_bytes, SEEK_SET);
@@ -50,6 +68,7 @@ uint32_t get_read_length(FILE *f){
     return (uint32_t)strlen(buffer);
     
 }
+
 
 /**
  *
