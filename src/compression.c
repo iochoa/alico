@@ -33,6 +33,7 @@ int print_line(struct sam_line_t *sline, uint8_t print_mode, FILE *fs, bool comp
             fprintf(fs, "%s\t", sline->read);
             // need to re-reverse quality scores
             if ((sline->flag & 16) == 16 && !compressing) {
+		//printf("sline print line is: %d\n", sline->readLength);
                 for (i = sline->readLength - 1; i >= 0; --i)
                     fputc(sline->quals[i], fs);
                 fputc('\t', fs);
@@ -61,7 +62,8 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
     // Load the data from the file
     if(load_sam_line(samBlock))
         return 0;
-    
+    //printf("sam line loaded\n");
+ 
     // If read is unmapped and reference name is *, we assume that all the remaining
     // lines are unmapped and have reference name *.
     // If the read is unmapped but has a position/reference name, we simply use that
@@ -156,7 +158,8 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness)
     
     //This is only for fixed length? i think so.
     sline.readLength = samBlock->read_length;
-    
+    //sline.readLength = samBlock->reads->models->read_length;
+    //printf("sline read length is: %d\n", sline.readLength); 
     //printf("Decompressing the block...\n");
     // Loop over the lines of the sam block
         
@@ -202,7 +205,11 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness)
             QVs_decompress(as, samBlock->QVs, decompression_flag, sline.quals);
     }
     else
-        QVs_decompress_lossless(as, samBlock->QVs, decompression_flag, sline.quals);
+        QVs_decompress_lossless(as, samBlock->QVs, decompression_flag, sline.quals, (int)strlen(sline.read));
+
+   
+    sline.readLength = samBlock->reads->models->read_length;
+    // printf("sline read length before printing is: %d\n", sline.readLength); 
     print_line(&sline, 0, samBlock->fs);
 
     return 1;
@@ -283,7 +290,8 @@ void* compress(void *thread_info){
     }
     else
         compress_int(as, samBlock->codebook_model, LOSSLESS);
-    
+   
+   printf("start line compression\n"); 
     while (compress_line(as, samBlock, info.funmapped, info.lossiness)) {
         ++lineCtr;
         if (lineCtr % 1000000 == 0) {

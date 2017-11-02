@@ -398,8 +398,12 @@ uint32_t reconstruct_read(Arithmetic_stream as, read_models models, uint32_t pos
     uint8_t match;
     
     enum BASEPAIR refbp;
-    
+    models->read_length = readLen; 
     read[models->read_length] = '\0';
+    read[readLen] = '\0';
+    //printf("read length readLen: %d\n", readLen);
+    //printf("read length: %d\n", models->read_length);
+
     // reset prevPos if the chromosome changed
     if (chr_change == 1) {
       prevPos = 0;

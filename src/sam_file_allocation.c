@@ -477,16 +477,18 @@ uint32_t load_sam_block(sam_block sb){ //NOT IN USE! load_sam_line.
             ptr = strtok(NULL, "\t");
             strcpy(rline->read, ptr);
             // QUAL
+            qvline->columns = (int)strlen(ptr);
+            printf("Num cols is:%d\n",qvline->columns);
             ptr = strtok(NULL, "\t");
             // Read the QVs and translate them to a 0-based scale
             // Check if the read is inversed
             if (rline->invFlag & 16) { // The read is inverted
-                for (j = sb->read_length - 1; j >= 0; j--) {
+                for (j = qvline->columns - 1; j >= 0; j--) {
                     qvline->data[j] = (*ptr) - 33, ptr++;
                 }
             }
             else{ // The read is not inversed
-                for (j = 0; j < sb->read_length; j++) {
+                for (j = 0; j < qvline->columns; j++) {
                     qvline->data[j] = (*ptr) - 33, ptr++;
                 }
             }
@@ -602,17 +604,21 @@ uint32_t load_sam_line(sam_block sb){
         // SEQ
         ptr = strtok(NULL, "\t");
         strcpy(rline->read, ptr);
+	sb->reads->models->read_length = (uint32_t)strlen(ptr);
         // QUAL
+        sb->QVs->qv_lines->columns = (uint32_t)strlen(ptr);
+        qvline->columns = (uint32_t)strlen(ptr);
         ptr = strtok(NULL, "\t");
+        //printf("quality score read length sam file: %d\n", strlen(ptr));
         // Read the QVs and translate them to a 0-based scale
         // Check if the read is inversed
         if (rline->invFlag & 16) { // The read is inverted
-            for (j = sb->read_length - 1; j >= 0; j--) {
+            for (j = qvline->columns - 1; j >= 0; j--) {
                 qvline->data[j] = (*ptr) - 33, ptr++;
             }
         }
         else{ // The read is not inversed
-            for (j = 0; j < sb->read_length; j++) {
+            for (j = 0; j < qvline->columns; j++) {
                 qvline->data[j] = (*ptr) - 33, ptr++;
             }
         }

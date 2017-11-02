@@ -208,15 +208,17 @@ double QVs_compress_lossless(Arithmetic_stream as, stream_model* models, qv_line
     return 0;
 }
 
-double QVs_decompress_lossless(Arithmetic_stream as, qv_block info, uint8_t inv, char* quals) {
+double QVs_decompress_lossless(Arithmetic_stream as, qv_block info, uint8_t inv, char* quals, int num_cols) {
     
     uint8_t prev_qv = 0;
-    uint32_t columns = info->columns;
+    //uint32_t columns = info->columns;
+    uint32_t columns = num_cols;
     
     int s = 0;
     //char *line = (char *) _alloca(columns+1);
-    quals[columns] = 0;
-    
+    quals[columns] = '\0';
+    //printf("num cols is %d\n", num_cols);
+ 
     for (s = 0; s < columns; ++s) {
         quals[s] = decompress_qv(as, info->model, get_qv_model_index(s, prev_qv));
         prev_qv = quals[s];

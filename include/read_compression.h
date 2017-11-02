@@ -49,7 +49,7 @@ uint32_t compress_qv(Arithmetic_stream a, stream_model *model, uint32_t idx, uin
 double QVs_compress(Arithmetic_stream as, qv_block info, symbol_t *qArray);
 double QVs_compress_lossless(Arithmetic_stream as, stream_model* models, qv_line line);
 double QVs_decompress(Arithmetic_stream as, qv_block info, uint8_t inv, char* quals);
-double QVs_decompress_lossless(Arithmetic_stream as, qv_block info, uint8_t inv, char* quals);
+double QVs_decompress_lossless(Arithmetic_stream as, qv_block info, uint8_t inv, char* quals, int num_cols);
 uint32_t decompress_qv(Arithmetic_stream a, stream_model *model, uint32_t idx);
 
 // Prototypes for the functions to extract the information from the reads
