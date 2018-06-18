@@ -5,6 +5,7 @@
 //  Created by Mikel Hernaez on 12/1/14.
 //  Copyright (c) 2014 Mikel Hernaez. All rights reserved.
 //
+#include <assert.h>
 
 #include <stdio.h>
 

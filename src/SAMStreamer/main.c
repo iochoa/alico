@@ -40,6 +40,7 @@ void usage(const char *name) {
     //printf("\t-c [#]\t\t: Compress using [#] clusters (default: 3)\n");
     //printf("\t-u [FILE]\t: Write the uncompressed lossy values to FILE (default: off)\n");
     printf("\t-h\t\t: Print this help\n");
+    printf("\t-q [ratio]\t\t: CALQ Mode");
     //printf("\t-s\t\t: Print summary stats\n");
     //printf("\t-t [lines]\t: Number of lines to use as training set (0 for all, 1000000 default)\n");
     //printf("\t-v\t\t: Enable verbose output\n");
@@ -76,6 +77,8 @@ void write_headers(FILE *input, FILE *output) {
 }
 
 int main(int argc, const char * argv[]) {
+
+    int calq = 0;
 
     uint32_t mode, i = 0, file_idx = 0, rc = 0, lossiness = LOSSLESS;
     
@@ -151,6 +154,18 @@ int main(int argc, const char * argv[]) {
                 opts.mode = MODE_RATIO;
                 i += 2;
                 break;
+            // COMPRESSION WITH CALQ
+            case 'q':
+                mode = COMPRESSION;
+                if ( (opts.ratio = atof(argv[i+1])) == 1) {
+                    lossiness = LOSSLESS;
+                }
+                else
+                    lossiness = LOSSY;
+                opts.mode = MODE_RATIO;
+                i += 2;
+                calq = 1;
+                break; 
             // UPLOAD
             case 'u':
                 mode = UPLOAD;
@@ -265,6 +280,12 @@ int main(int argc, const char * argv[]) {
     
     comp_info.mode = mode;
     comp_info.lossiness = lossiness;
+
+    if (calq == 1) {
+        comp_info.calqmode = 1;
+    } else {
+        comp_info.calqmode = 0;
+    }
     
     switch (mode) {
         case COMPRESSION: {

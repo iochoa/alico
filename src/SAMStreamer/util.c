@@ -11,6 +11,8 @@
 void start_timer(struct hrtimer_t *timer) {
 #ifdef __linux__
 	clock_gettime(CLOCK_REALTIME, &timer->start);
+#elif __CYGWIN__
+	clock_gettime(CLOCK_REALTIME, &timer->start);
 #elif __APPLE__
 // OS X does not have clock_gettime, use clock_get_time
     clock_serv_t cclock;
@@ -32,6 +34,9 @@ void start_timer(struct hrtimer_t *timer) {
 void stop_timer(struct hrtimer_t *timer) {
 #ifdef __linux__ 
 	clock_gettime(CLOCK_REALTIME, &timer->stop);
+#elif __CYGWIN__
+	clock_gettime(CLOCK_REALTIME, &timer->stop);
+
 #elif __APPLE__
 // OS X does not have clock_gettime, use clock_get_time
     clock_serv_t cclock;
@@ -60,6 +65,18 @@ double get_timer_interval(struct hrtimer_t *timer) {
 	}
 	
 	return ((double)dsec) + dnsec * 1.e-9;
+
+#elif __CYGWIN__
+	long dnsec = timer->stop.tv_nsec - timer->start.tv_nsec;
+	int dsec = timer->stop.tv_sec - timer->start.tv_sec;
+
+	if (dnsec < 0) {
+		dnsec += 1e9;
+		dsec -= 1;
+	}
+	
+	return ((double)dsec) + dnsec * 1.e-9;
+
 #elif __APPLE__
     long dnsec = timer->stop.tv_nsec - timer->start.tv_nsec;
 	long dsec = timer->stop.tv_sec - timer->start.tv_sec;
