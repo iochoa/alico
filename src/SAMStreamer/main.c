@@ -40,7 +40,7 @@ void usage(const char *name) {
     //printf("\t-c [#]\t\t: Compress using [#] clusters (default: 3)\n");
     //printf("\t-u [FILE]\t: Write the uncompressed lossy values to FILE (default: off)\n");
     printf("\t-h\t\t: Print this help\n");
-    printf("\t-q [ratio]\t\t: CALQ Mode");
+    printf("\t-q\t\t: CALQ Mode\n");
     //printf("\t-s\t\t: Print summary stats\n");
     //printf("\t-t [lines]\t: Number of lines to use as training set (0 for all, 1000000 default)\n");
     //printf("\t-v\t\t: Enable verbose output\n");
@@ -157,14 +157,10 @@ int main(int argc, const char * argv[]) {
             // COMPRESSION WITH CALQ
             case 'q':
                 mode = COMPRESSION;
-                if ( (opts.ratio = atof(argv[i+1])) == 1) {
-                    lossiness = LOSSLESS;
-                }
-                else
-                    lossiness = LOSSY;
-                opts.mode = MODE_RATIO;
-                i += 2;
+                lossiness = LOSSY;
+//                 opts.mode = MODE_RATIO;
                 calq = 1;
+                i += 1;
                 break; 
             // UPLOAD
             case 'u':
@@ -290,10 +286,16 @@ int main(int argc, const char * argv[]) {
     switch (mode) {
         case COMPRESSION: {
             comp_info.fsam = fopen( input_name, "r");
-            comp_info.fref = fopen ( ref_name , "r" );
+            if (calq) {
+                if ( comp_info.fsam == NULL ) {
+                    fputs ("File error while opening sam file\n", stderr); exit (1);
+                }
+            } else {
+                comp_info.fref = fopen ( ref_name , "r" );
 
-            if ( comp_info.fref == NULL || comp_info.fsam == NULL ){
-                fputs ("File error while opening ref and sam files\n",stderr); exit (1);
+                if ( comp_info.fref == NULL || comp_info.fsam == NULL ){
+                    fputs ("File error while opening ref and sam files\n",stderr); exit (1);
+                }
             }
 
             make_dir(output_name);

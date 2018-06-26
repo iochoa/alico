@@ -556,7 +556,6 @@ uint32_t load_sam_block(sam_block sb){ //NOT IN USE! load_sam_line.
 }
 
 uint32_t load_sam_line(sam_block sb){
-    
     int32_t j = 0;
     read_line rline = sb->reads->lines;
     qv_line qvline = sb->QVs->qv_lines;
@@ -604,7 +603,7 @@ uint32_t load_sam_line(sam_block sb){
         // SEQ
         ptr = strtok(NULL, "\t");
         strcpy(rline->read, ptr);
-	sb->reads->models->read_length = (uint32_t)strlen(ptr);
+        sb->reads->models->read_length = (uint32_t)strlen(ptr);
         // QUAL
         sb->QVs->qv_lines->columns = (uint32_t)strlen(ptr);
         qvline->columns = (uint32_t)strlen(ptr);
@@ -645,11 +644,11 @@ uint32_t load_sam_line(sam_block sb){
         if(auxCnt!=0) if(aux_fields[auxCnt-1][strlen(aux_fields[auxCnt-1])-1]=='\n') aux_fields[auxCnt-1][strlen(aux_fields[auxCnt-1])-1]=0;
         
         sb->aux->aux_cnt = auxCnt;
-        
         return 0;
     }
-    else
+    else {
         return 1;
+    }
 }
 
 /**

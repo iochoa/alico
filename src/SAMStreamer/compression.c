@@ -15,6 +15,7 @@
 
 #include "IO/SAM/SAMRecord.h"
 #include "QualCodec/QualEncoder.h"
+#include "Common/Exceptions.h"
 
 int print_line(struct sam_line_t *sline, uint8_t print_mode, FILE *fs, bool compressing){
     
@@ -74,111 +75,130 @@ static void build_SAMRecord_for_calq(sam_block samBlock, calq::SAMRecord * const
 }
 
 int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq)  {
+    try {
+//         if (calq) {
+            // Max33 Phred+33 [0,93]
+            int polyploidy_ = 2;
+            int qualityValueMax_ = 93;
+            int qualityValueMin_ = 0;
+            int qualityValueOffset_ = 33;
 
-    int polyploidy_ = 2;
-    int qualityValueMax_ = 0;
-    int qualityValueMin_ = 0;
-    int qualityValueOffset_ = 0;
-
-
-    calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
-
-    static bool unmapped_reads = false;
-    uint8_t chr_change;
-    
-    // Load the data from the file
-    if(load_sam_line(samBlock))
-        return 0;
-    //printf("sam line loaded\n");
- 
-    // If read is unmapped and reference name is *, we assume that all the remaining
-    // lines are unmapped and have reference name *.
-    // If the read is unmapped but has a position/reference name, we simply use that
-    // information to compress it.
-    if ( (samBlock->reads->lines->invFlag & 4) == 4 && *samBlock->rnames->rnames[0] == '*'){
-        read_line line = samBlock->reads->lines; 
-
-        fprintf(funmapped, "%s\t", *samBlock->IDs->IDs);
-        fprintf(funmapped, "%d\t", line->invFlag);
-        fprintf(funmapped, "%s\t", *samBlock->rnames->rnames);
-        fprintf(funmapped, "%d\t", line->pos);
-        fprintf(funmapped, "%d\t", *samBlock->mapq->mapq);
-        fprintf(funmapped, "%s\t", line->cigar);
-        fprintf(funmapped, "%s\t", *samBlock->rnext->rnext); 
-        fprintf(funmapped, "%d\t", *samBlock->pnext->pnext);
-        fprintf(funmapped, "%d\t", *samBlock->tlen->tlen);
-        fprintf(funmapped, "%s\t", line->read);
-        int32_t i = 0;
-        qv_line_t qline = *samBlock->QVs->qv_lines;
-        if ((line->invFlag & 16) == 16) {
-            for (i = qline.columns - 1; i >= 0; i--) {
-                fputc(qline.data[i] + 33, funmapped);
-            }
-        } else {
-            for (i = 0; i < qline.columns; i++) {
-                fputc(qline.data[i] + 33, funmapped);
-            }
-        }
-        fputc('\t', funmapped);
-        for (i = 0; i < samBlock->aux->aux_cnt; i++) {
-            fprintf(funmapped, "%s", samBlock->aux->aux_str[i]);  
-            if (i < samBlock->aux->aux_cnt - 1) fputc('\t', funmapped);
-        }
-        fputc('\n', funmapped); 
-        return 1;
-    } else {
-        if (unmapped_reads) {
-            fprintf(stderr, "compress_line error: There is a mapped read following a read that is not mapped to any chromosome. This probably means that the sam file is not correctly sorted.\n");
-            exit(1);
-        }
-    }
+            calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
+//         }
         
-    // Compress sam line
-    
-    chr_change = compress_rname(as, samBlock->rnames->models, *samBlock->rnames->rnames);
+        static bool unmapped_reads = false;
+        uint8_t chr_change;
         
-    if (chr_change == 1){
-        qualEncoder.finishBlock();
-        qualEncoder.writeBlock();
-
-        // Store Ref sequence in memory
-        store_reference_in_memory(samBlock->fref);
-        // Reset cumsumP
-        cumsumP = 0;
-        memset(snpInRef, 0, MAX_BP_CHR);
-    }
+        // Load the data from the file
+        if(load_sam_line(samBlock))
+            return 0;
     
-    compress_id(as, samBlock->IDs->models, *samBlock->IDs->IDs);
+        // If read is unmapped and reference name is *, we assume that all the remaining
+        // lines are unmapped and have reference name *.
+        // If the read is unmapped but has a position/reference name, we simply use that
+        // information to compress it.
+        if ( (samBlock->reads->lines->invFlag & 4) == 4 && *samBlock->rnames->rnames[0] == '*'){
+            read_line line = samBlock->reads->lines; 
 
-    compress_mapq(as, samBlock->mapq->models, *samBlock->mapq->mapq);
-
-    compress_rnext(as, samBlock->rnext->models, *samBlock->rnext->rnext);
-
-    compress_read(as, samBlock->reads->models, samBlock->reads->lines, chr_change);
-    
-    compress_cigar(as, samBlock->reads->models, samBlock->reads->lines->cigar, samBlock->reads->lines->cigarFlags);
-
-    compress_tlen(as, samBlock->tlen->models, *samBlock->tlen->tlen);
-
-    compress_pnext_raw(as, samBlock->pnext->models,  samBlock->reads->lines->pos, *samBlock->pnext->pnext);
-    
-    
-    //idoia
-    //compress_aux(as, samBlock->aux->models, samBlock->aux->aux_str, samBlock->aux->aux_cnt, samBlock->aux);
-    compress_aux_idoia(as, samBlock->aux->models, samBlock->aux->aux_str, samBlock->aux->aux_cnt, samBlock->aux);
-    //idoia
-    
-    if (calq) {
-        char *fields[calq::SAMRecord::NUM_FIELDS];
-        calq::SAMRecord samRecord(fields);
-        build_SAMRecord_for_calq(samBlock, &samRecord);
-        qualEncoder.addMappedRecordToBlock(samRecord);
-    } else {
-        if (lossiness == LOSSY) {
-            QVs_compress(as, samBlock->QVs, samBlock->QVs->qArray);
+            fprintf(funmapped, "%s\t", *samBlock->IDs->IDs);
+            fprintf(funmapped, "%d\t", line->invFlag);
+            fprintf(funmapped, "%s\t", *samBlock->rnames->rnames);
+            fprintf(funmapped, "%d\t", line->pos);
+            fprintf(funmapped, "%d\t", *samBlock->mapq->mapq);
+            fprintf(funmapped, "%s\t", line->cigar);
+            fprintf(funmapped, "%s\t", *samBlock->rnext->rnext); 
+            fprintf(funmapped, "%d\t", *samBlock->pnext->pnext);
+            fprintf(funmapped, "%d\t", *samBlock->tlen->tlen);
+            fprintf(funmapped, "%s\t", line->read);
+            int32_t i = 0;
+            qv_line_t qline = *samBlock->QVs->qv_lines;
+            if ((line->invFlag & 16) == 16) {
+                for (i = qline.columns - 1; i >= 0; i--) {
+                    fputc(qline.data[i] + 33, funmapped);
+                }
+            } else {
+                for (i = 0; i < qline.columns; i++) {
+                    fputc(qline.data[i] + 33, funmapped);
+                }
+            }
+            fputc('\t', funmapped);
+            for (i = 0; i < samBlock->aux->aux_cnt; i++) {
+                fprintf(funmapped, "%s", samBlock->aux->aux_str[i]);  
+                if (i < samBlock->aux->aux_cnt - 1) fputc('\t', funmapped);
+            }
+            fputc('\n', funmapped); 
+            return 1;
         } else {
-            QVs_compress_lossless(as, samBlock->QVs->model, samBlock->QVs->qv_lines);
+            if (unmapped_reads) {
+                fprintf(stderr, "compress_line error: There is a mapped read following a read that is not mapped to any chromosome. This probably means that the sam file is not correctly sorted.\n");
+                exit(1);
+            }
         }
+            
+        // Compress sam line
+        
+        chr_change = compress_rname(as, samBlock->rnames->models, *samBlock->rnames->rnames);
+            
+        if (chr_change == 1){
+            if (calq) {
+                qualEncoder.finishBlock();
+                qualEncoder.writeBlock();
+            }
+
+            // Store Ref sequence in memory
+            store_reference_in_memory(samBlock->fref);
+
+            // Reset cumsumP
+            cumsumP = 0;
+            memset(snpInRef, 0, MAX_BP_CHR);
+        }
+        
+        compress_id(as, samBlock->IDs->models, *samBlock->IDs->IDs);
+
+        compress_mapq(as, samBlock->mapq->models, *samBlock->mapq->mapq);
+
+        compress_rnext(as, samBlock->rnext->models, *samBlock->rnext->rnext);
+
+        compress_read(as, samBlock->reads->models, samBlock->reads->lines, chr_change);
+        
+        compress_cigar(as, samBlock->reads->models, samBlock->reads->lines->cigar, samBlock->reads->lines->cigarFlags);
+
+        compress_tlen(as, samBlock->tlen->models, *samBlock->tlen->tlen);
+
+        compress_pnext_raw(as, samBlock->pnext->models,  samBlock->reads->lines->pos, *samBlock->pnext->pnext);
+        
+        
+        //idoia
+        //compress_aux(as, samBlock->aux->models, samBlock->aux->aux_str, samBlock->aux->aux_cnt, samBlock->aux);
+        compress_aux_idoia(as, samBlock->aux->models, samBlock->aux->aux_str, samBlock->aux->aux_cnt, samBlock->aux);
+        //idoia
+        
+        if (calq) {
+            fprintf(stdout, "line compression w/ calq\n");
+            char *fields[calq::SAMRecord::NUM_FIELDS];
+            calq::SAMRecord samRecord(fields);
+            build_SAMRecord_for_calq(samBlock, &samRecord);
+            qualEncoder.addMappedRecordToBlock(samRecord);
+        } else {
+            if (lossiness == LOSSY) {
+                QVs_compress(as, samBlock->QVs, samBlock->QVs->qArray);
+            } else {
+                QVs_compress_lossless(as, samBlock->QVs->model, samBlock->QVs->qv_lines);
+            }
+        }
+
+    }
+    catch (const calq::ErrorException& e) {
+        std::cerr << "CALQ error";
+        if (strlen(e.what()) > 0) {
+            std::cerr << ": " << e.what();
+        }
+        std::cerr << std::endl;
+        abort();
+    }
+    catch (...) {
+        std::cerr << "Unkown error occurred" << std::endl;
+        abort();
     }
 
     return 1;

@@ -98,7 +98,7 @@ set(sam_include_dir ${CMAKE_SOURCE_DIR}/include)
 
 set(calq_source_dir ${CMAKE_SOURCE_DIR}/src/extern/calq)
 set(calq_qualcodec_dir ${calq_source_dir}/QualCodec)
-set(calq_common_dir ${calq_source_dir}/common)
+set(calq_common_dir ${calq_source_dir}/Common)
 
 message(STATUS "sam  source dir: ${sam_source_dir}")
 message(STATUS "sam include dir: ${sam_include_dir}")
@@ -187,7 +187,7 @@ add_executable(SAMStreamer ${sam_source_files} ${calq_source_files})
 target_include_directories(${SAMStreamer} PRIVATE ${sam_include_dir})
 target_include_directories(${SAMStreamer} PRIVATE ${calq_source_dir})
 
-target_link_libraries(${SAMStreamer} libssh)
+target_link_libraries(${SAMStreamer} ssh pthread)
 
 # set(encoder "encoder")
 # set(encoder_source_dir ${CMAKE_SOURCE_DIR}/source/encoder)

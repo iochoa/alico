@@ -12,7 +12,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef LINUX
+#ifdef __linux__
 	#include <time.h>
 	#define _stat stat
 	#define _alloca alloca
@@ -36,7 +36,7 @@
 #endif
 
 struct hrtimer_t {
-#ifdef LINUX
+#ifdef __linux__
 	struct timespec start;
 	struct timespec stop;
 	struct timespec res;
