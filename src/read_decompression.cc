@@ -25,7 +25,7 @@ int store_reference_in_memory(FILE* refFile){
     char header[1024];
     char buf[1024];
     
-    reference = (char *) malloc(MAX_BP_CHR*sizeof(char));
+    reference = (char *) calloc(MAX_BP_CHR,sizeof(char));
     
     // ******* Read and Store Reference****** //
     letterCount = 0;
@@ -350,7 +350,7 @@ static void fill_target(char *ref, char *target, uint32_t prev_pos, uint32_t cur
     (*ref_pos)++;
     (*dels_pos)++;
   }
-  for (int i = prev_pos; i < cur_pos; i++) {
+  for (uint32_t i = prev_pos; i < cur_pos; i++) {
     target[i] = ref[*ref_pos];
     if (VERIFY) assert(isalpha(target[i]));
     (*ref_pos)++;
@@ -391,7 +391,7 @@ uint32_t reconstruct_read(Arithmetic_stream as, read_models models, uint32_t pos
     static uint32_t prevPos = 0;
     
     unsigned int ctrDels = 0, readCtr = 0;
-    int i = 0;
+    uint32_t i = 0;
     uint8_t tmpChar;
     unsigned int returnVal;
     

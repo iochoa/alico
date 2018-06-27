@@ -139,7 +139,7 @@ int scp_read(ssh_session session, char* directory)
         length = ssh_scp_request_get_size(scp);
         filename = strdup(ssh_scp_request_get_filename(scp));
         int mode = ssh_scp_request_get_permissions(scp);
-        printf("Receiving file %s, size %llu, permisssions 0%o\n",
+        printf("Receiving file %s, size %lu, permisssions 0%o\n",
                filename, length, mode);
         
         buffer = (char *) malloc(length);
@@ -166,7 +166,7 @@ int scp_read(ssh_session session, char* directory)
             
         }while (bufCtr < length);
         
-        printf("Done: Num of Bytes read %d, file length %llu\n", bufCtr, length);
+        printf("Done: Num of Bytes read %d, file length %lu\n", bufCtr, length);
         
         strcat(filepath, filename);
         if ((fp = fopen(filepath, "w")) == NULL) {

@@ -128,7 +128,7 @@ uint32_t decompress_char_array(Arithmetic_stream as, stream_model *model, int *a
         a[i] = read_value_from_as(as, model[ctx]);
         ctx = a[i];
         
-        if (a[i] == eol)
+        if (a[i] == '\n')//eol)
             return 1;
     }
     
@@ -329,9 +329,9 @@ void calculate_statistics(struct qv_block_t *info) {
         //load_qv_line(info);
         line = &info->qv_lines[line_idx];
         pmf_increment(get_cond_pmf(pmf_list, 0, 0), line->data[0]);
-        for (column = 1; column < info->columns; ++column) {
+        for (column = 1; column < info->columns; ++column) 
             pmf_increment(get_cond_pmf(pmf_list, column, line->data[column-1]), line->data[column]);
-        }
+     
     }
 
     // Then find unconditional PMFs

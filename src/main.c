@@ -303,6 +303,9 @@ int main(int argc, const char * argv[]) {
             waitpid(pid, NULL, 0);
 
             fclose(comp_info.fsam);
+            fclose(comp_info.fref);
+            fclose(comp_info.fcomp);
+            free(reference);
             time(&end_main);
             break;
                           }

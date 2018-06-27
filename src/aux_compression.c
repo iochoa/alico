@@ -299,7 +299,7 @@ uint32_t reconstructCigar(uint32_t* Dels, ins* Insers, uint32_t numDels, uint32_
     while (itD<numDels) {
         posD += Dels[itD];
         k=1;
-        while(Dels[itD+k]==0 && (itD+k)<numDels) {
+        while((itD+k)<numDels && Dels[itD+k]==0) {
             k++;
         }
         //printf("Pos: %d, Dels: %d\n",posD,k);
@@ -313,7 +313,7 @@ uint32_t reconstructCigar(uint32_t* Dels, ins* Insers, uint32_t numDels, uint32_
     while (itI<numIns) {
         posI += Insers[itI].pos;
         k=1;
-        while(Insers[itI+k].pos==0 && (itI+k)<numIns) {
+        while((itI+k)<numIns && Insers[itI+k].pos==0) {
             k++;
         }
         cid[c].pos = posI;

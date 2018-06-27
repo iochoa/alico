@@ -214,7 +214,7 @@ double QVs_decompress_lossless(Arithmetic_stream as, qv_block info, uint8_t inv,
     //uint32_t columns = info->columns;
     uint32_t columns = num_cols;
     
-    int s = 0;
+    uint32_t s = 0;
     //char *line = (char *) _alloca(columns+1);
     quals[columns] = '\0';
     //printf("num cols is %d\n", num_cols);
@@ -244,7 +244,7 @@ double QVs_decompress(Arithmetic_stream as, qv_block info, uint8_t inv, char* qu
     uint8_t prev_qv = 0, foo;
     uint32_t columns = info->columns;
     
-    int s = 0;
+    uint32_t s = 0;
     //char *line = (char *) _alloca(columns+1);
     quals[columns] = 0;
     

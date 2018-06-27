@@ -82,14 +82,15 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
         fprintf(funmapped, "%d\t", *samBlock->tlen->tlen);
         fprintf(funmapped, "%s\t", line->read);
         int32_t i = 0;
+        uint32_t j = 0;
         qv_line_t qline = *samBlock->QVs->qv_lines;
         if ((line->invFlag & 16) == 16) {
-            for (i = qline.columns - 1; i >= 0; i--) {
-                fputc(qline.data[i] + 33, funmapped);
+            for (j = qline.columns - 1; j >= 0; j--) {
+                fputc(qline.data[j] + 33, funmapped);
             }
         } else {
-            for (i = 0; i < qline.columns; i++) {
-                fputc(qline.data[i] + 33, funmapped);
+            for (j = 0; j < qline.columns; j++) {
+                fputc(qline.data[j] + 33, funmapped);
             }
         }
         fputc('\t', funmapped);
@@ -164,7 +165,7 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness)
     // Loop over the lines of the sam block
         
     chr_change = decompress_rname(as, samBlock->rnames->models, sline.rname);
-        
+    
     if (chr_change == -1)
         return 0;
         
@@ -256,7 +257,268 @@ int decompress_most_common_list(Arithmetic_stream as, aux_block aux)
     return 1;
 }
 
+void free_sam_reads_compress(read_block reads){
+    free(reads->lines->cigar);
+    free(reads->lines->edits);
+    free(reads->lines->read);
+    free(reads->lines);
+    free(reads->models->flag[0]->counts-1);
+    free(reads->models->flag[0]);
+    free(reads->models->flag);
+    for (int i = 0; i < 4; i++){
+    	free(reads->models->pos_alpha[i]->counts-1);
+        free(reads->models->pos_alpha[i]);
+    }
+    free(reads->models->pos_alpha);
+    free(reads->models->pos[0]->alphabet);
+    free(reads->models->pos[0]->counts);
+    free(reads->models->pos[0]->alphaExist);
+    free(reads->models->pos[0]->alphaMap);
+    free(reads->models->pos[0]);
+    free(reads->models->pos);
+    for (int i = 0; i < 256; i++){
+        free(reads->models->match[i]->counts-1);
+        free(reads->models->match[i]);
+    }
+    free(reads->models->match);
+    free(reads->models->snps[0]->counts-1);
+    free(reads->models->snps[0]);
+    free(reads->models->snps);
+    free(reads->models->indels[0]->counts-1);
+    free(reads->models->indels[0]);
+    free(reads->models->indels);
+    for (int i = 0; i < 0xffff; i++){
+    	free(reads->models->var[i]->counts-1);
+    	free(reads->models->var[i]);
+    }
+    free(reads->models->var);
+    for (int i = 0; i < 6; i++){
+        free(reads->models->chars[i]->counts-1);
+        free(reads->models->chars[i]);
+    }
+    free(reads->models->chars);
+    free(reads->models->cigar[0]->counts-1);
+    free(reads->models->cigar[0]);
+    free(reads->models->cigar);
+    free(reads->models->cigarFlags[0]->counts-1);
+    free(reads->models->cigarFlags[0]);
+    free(reads->models->cigarFlags);
+    for (int i = 0; i < 4; i++){
+        free(reads->models->rlength[i]->counts-1);
+        free(reads->models->rlength[i]);
+    }
+    free(reads->models->rlength);
+    free(reads->models);
+    free(reads); 
+}
 
+void free_sam_ids_compress(id_block IDs){
+    free(IDs->IDs[0]);
+    free(IDs->IDs);
+    for (int i = 0; i < MAX_NUMBER_TOKENS_ID; i++){
+        free(IDs->models->alpha_len[i]->counts-1);
+        free(IDs->models->alpha_len[i]);
+        free(IDs->models->alpha_value[i]->counts-1);
+        free(IDs->models->alpha_value[i]);
+        free(IDs->models->chars[i]->counts-1);
+        free(IDs->models->chars[i]);
+        free(IDs->models->delta[i]->counts-1);
+        free(IDs->models->delta[i]);
+        free(IDs->models->zero_run[i]->counts-1);
+        free(IDs->models->zero_run[i]);
+        free(IDs->models->token_type[i]->counts-1);
+        free(IDs->models->token_type[i]);
+        for (int j = 0; j < 4; j++) {
+            free(IDs->models->integer[i*4 + j]->counts-1);
+            free(IDs->models->integer[i*4 + j]);
+        }
+    }
+    free(IDs->models->alpha_len);
+    free(IDs->models->alpha_value);
+    free(IDs->models->chars);
+    free(IDs->models->integer);
+    free(IDs->models->delta);
+    free(IDs->models->zero_run);
+    free(IDs->models->token_type);
+    free(IDs->models);
+    free(IDs);
+}
+
+void free_sam_block_compress(sam_block samBlock){
+    for (int i = 0; i < 256*4; i++){
+        free(samBlock->codebook_model[i]->counts-1);
+        free(samBlock->codebook_model[i]);
+    }
+    free(samBlock->codebook_model);
+    free_sam_reads_compress(samBlock->reads);
+    free_distortion_matrix(samBlock->QVs->dist);
+    free_alphabet(samBlock->QVs->alphabet);
+    free(samBlock->QVs->qv_lines[0].data);
+    free(samBlock->QVs->qv_lines);
+    uint32_t model_idx;
+    for (uint32_t i = 0; i < samBlock->QVs->columns; i++){
+        for (int j = 0; j < 2*(QV_ALPHABET_SIZE + 1); j++){
+            model_idx = get_qv_model_index(i, j);
+            free(samBlock->QVs->model[model_idx]->counts);
+            free(samBlock->QVs->model[model_idx]);
+        }
+    }
+    free(samBlock->QVs->model);
+    free_sam_ids_compress(samBlock->IDs);
+    for (int i = 0; i < MAX_AUX_FIELDS; i++)
+        free(samBlock->aux->aux_str[i]);
+    free(samBlock->aux->aux_str);
+    for (int i = 0; i < MOST_COMMON_LIST_SIZE; i++)
+        free(samBlock->aux->most_common[i]);
+    free(samBlock->aux->most_common);
+    free(samBlock->aux->models->qAux[0]->counts-1);
+    free(samBlock->aux->models->qAux[0]);
+    free(samBlock->aux->models->qAux);
+    free(samBlock->aux->models->tagtypeLUTflag[0]->counts-1);
+    free(samBlock->aux->models->tagtypeLUTflag[0]);
+    free(samBlock->aux->models->tagtypeLUTflag);
+    free(samBlock->aux->models->typeLUTflag[0]->counts-1);
+    free(samBlock->aux->models->typeLUTflag[0]);
+    free(samBlock->aux->models->typeLUTflag);
+    free(samBlock->aux->models->tagtypeLUT[0]->counts-1);
+    free(samBlock->aux->models->tagtypeLUT[0]);
+    free(samBlock->aux->models->tagtypeLUT);
+    free(samBlock->aux->models->tag[0]->counts-1);
+    free(samBlock->aux->models->tag[0]);
+    free(samBlock->aux->models->tag[1]->counts-1);
+    free(samBlock->aux->models->tag[1]);
+    free(samBlock->aux->models->tag);
+    free(samBlock->aux->models->typeLUT[0]->counts-1);
+    free(samBlock->aux->models->typeLUT[0]);
+    free(samBlock->aux->models->typeLUT);
+    free(samBlock->aux->models->typeRAW[0]->counts-1);
+    free(samBlock->aux->models->typeRAW[0]);
+    free(samBlock->aux->models->typeRAW);
+    free(samBlock->aux->models->descBytes[0]->counts-1);
+    free(samBlock->aux->models->descBytes[0]);
+    free(samBlock->aux->models->descBytes[1]->counts-1);
+    free(samBlock->aux->models->descBytes[1]);
+    free(samBlock->aux->models->descBytes);
+    free(samBlock->aux->models->iidBytes[0]->counts-1);
+    free(samBlock->aux->models->iidBytes[0]);
+    free(samBlock->aux->models->iidBytes);
+    free(samBlock->aux->models->most_common_values[0]->counts-1);
+    free(samBlock->aux->models->most_common_values[0]);
+    free(samBlock->aux->models->most_common_values);
+    free(samBlock->aux->models->most_common_flag[0]->counts-1);
+    free(samBlock->aux->models->most_common_flag[0]);
+    free(samBlock->aux->models->most_common_flag);
+    free(samBlock->aux->models->most_common_list[0]->counts-1);
+    free(samBlock->aux->models->most_common_list[0]);
+    free(samBlock->aux->models->most_common_list);
+    free(samBlock->aux->models->sign_integers[0]->counts-1);
+    free(samBlock->aux->models->sign_integers[0]);
+    free(samBlock->aux->models->sign_integers);
+    for (int i = 0; i < 4; i++) {
+        free(samBlock->aux->models->integers[i]->counts-1);
+        free(samBlock->aux->models->integers[i]);
+    }
+    free(samBlock->aux->models->integers);
+    for (int i = 0; i < MAXLUT + 2; i++){
+        free(samBlock->aux->models->aux_TagType[i]->counts-1);
+        free(samBlock->aux->models->aux_TagType[i]);
+        free(samBlock->aux->models->most_common_values_wContext[i]->counts-1);
+        free(samBlock->aux->models->most_common_values_wContext[i]);
+        free(samBlock->aux->models->sign_integers_wContext[i]->counts-1);
+        free(samBlock->aux->models->sign_integers_wContext[i]);
+        free(samBlock->aux->models->iidBytes_wContext[i]->counts-1);
+        free(samBlock->aux->models->iidBytes_wContext[i]);
+        for (int j = 0; j < 4; j++){
+            free(samBlock->aux->models->integers_wContext[i*4 + j]->counts-1);
+            free(samBlock->aux->models->integers_wContext[i*4 + j]);
+        }
+        for (int j = 0; j < 2; j++){
+            free(samBlock->aux->models->descBytes_wContext[i*2 + j]->counts-1);
+            free(samBlock->aux->models->descBytes_wContext[i*2 + j]);
+        }
+    }
+    free(samBlock->aux->models->aux_TagType);
+    free(samBlock->aux->models->most_common_values_wContext);
+    free(samBlock->aux->models->sign_integers_wContext);
+    free(samBlock->aux->models->iidBytes_wContext);
+    free(samBlock->aux->models->integers_wContext);
+    free(samBlock->aux->models->descBytes_wContext);
+    free(samBlock->aux->models->firstAux_TagType[0]->counts-1);
+    free(samBlock->aux->models->firstAux_TagType[0]);
+    free(samBlock->aux->models->firstAux_TagType);
+    free(samBlock->aux->models);
+    free(samBlock->aux);
+    for (int i = 0; i < MAX_LINES_PER_BLOCK; i++)
+        free(samBlock->rnames->rnames[i]);
+    free(samBlock->rnames->rnames);
+    free(samBlock->rnames->models->same_ref[0]->counts-1);
+    free(samBlock->rnames->models->same_ref[0]);
+    free(samBlock->rnames->models->same_ref);
+    for (int i = 0; i < 256; i++){
+        free(samBlock->rnames->models->rname[i]->counts-1);
+        free(samBlock->rnames->models->rname[i]);
+    }
+    free(samBlock->rnames->models->rname);
+    free(samBlock->rnames->models);
+    free(samBlock->rnames);
+    for (int i = 0; i < 256; i++){
+        free(samBlock->mapq->models->mapq[i]->counts-1);
+        free(samBlock->mapq->models->mapq[i]);
+    }
+    free(samBlock->mapq->models->mapq);
+    free(samBlock->mapq->models);
+    free(samBlock->mapq->mapq);
+    free(samBlock->mapq);
+    free(samBlock->rnext->rnext[0]);
+    free(samBlock->rnext->rnext);
+    free(samBlock->rnext->models->same_ref[0]->counts-1);
+    free(samBlock->rnext->models->same_ref[0]);
+    free(samBlock->rnext->models->same_ref);
+    for (int i = 0; i < 256; i++){
+        free(samBlock->rnext->models->rnext[i]->counts-1);
+        free(samBlock->rnext->models->rnext[i]);
+    }
+    free(samBlock->rnext->models->rnext);
+    free(samBlock->rnext->models);
+    free(samBlock->rnext);
+    free(samBlock->pnext->pnext);
+    free(samBlock->pnext->models->zero[0]->counts-1);
+    free(samBlock->pnext->models->zero[0]);
+    free(samBlock->pnext->models->zero);
+    free(samBlock->pnext->models->sign[0]->counts-1);
+    free(samBlock->pnext->models->sign[0]);
+    free(samBlock->pnext->models->sign);
+    free(samBlock->pnext->models->assumption[0]->counts-1);
+    free(samBlock->pnext->models->assumption[0]);
+    free(samBlock->pnext->models->assumption);
+    for (int i = 0; i < 4; i++){
+        free(samBlock->pnext->models->raw_pnext[i]->counts-1);
+        free(samBlock->pnext->models->raw_pnext[i]);
+        free(samBlock->pnext->models->diff_pnext[i]->counts-1);
+        free(samBlock->pnext->models->diff_pnext[i]);
+    }
+    free(samBlock->pnext->models->raw_pnext);
+    free(samBlock->pnext->models->diff_pnext);
+    free(samBlock->pnext->models);
+    free(samBlock->pnext);
+    free(samBlock->tlen->tlen);
+    free(samBlock->tlen->models->sign[0]->counts-1);
+    free(samBlock->tlen->models->sign[0]);
+    free(samBlock->tlen->models->sign);
+    free(samBlock->tlen->models->zero[0]->counts-1);
+    free(samBlock->tlen->models->zero[0]);
+    free(samBlock->tlen->models->zero);
+    for (int i = 0; i < 4; i++){
+        free(samBlock->tlen->models->tlen[i]->counts-1);
+        free(samBlock->tlen->models->tlen[i]);
+    }
+    free(samBlock->tlen->models->tlen);
+    free(samBlock->tlen->models);
+    free(samBlock->tlen);
+    free(samBlock->QVs);
+    free(samBlock);
+ 
+}
 
 void* compress(void *thread_info){
     
@@ -295,7 +557,7 @@ void* compress(void *thread_info){
     while (compress_line(as, samBlock, info.funmapped, info.lossiness)) {
         ++lineCtr;
         if (lineCtr % 1000000 == 0) {
-          printf("[cbc] compressed %zu lines\n", lineCtr);
+          printf("[cbc] compressed %llu lines\n", lineCtr);
         }
     }
     
@@ -305,13 +567,16 @@ void* compress(void *thread_info){
     //end the compression
     compress_file_size = encoder_last_step(as);
     
-    printf("Final Size: %lld\n", compress_file_size);
+    printf("Final Size: %lu\n", compress_file_size);
     
     ticks = clock() - begin;
     
     printf("Compression (mapped reads only) took %f\n", ((float)ticks)/CLOCKS_PER_SEC);
     
-    //pthread_exit(NULL);
+    free_os_stream(as->ios);
+    free(as);
+    free_sam_block_compress(samBlock);
+   //pthread_exit(NULL);
     return NULL;
 }
 
@@ -345,7 +610,7 @@ void* decompress(void *thread_info){
     }
     
     n += samBlock->block_length;
-    
+    free_sam_block_compress(samBlock);
     ticks = clock() - begin;
     printf("Decompression (mapped reads only) took %f\n", ((float)ticks)/CLOCKS_PER_SEC);
     return NULL;

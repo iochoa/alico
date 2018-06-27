@@ -557,7 +557,7 @@ uint32_t load_sam_block(sam_block sb){ //NOT IN USE! load_sam_line.
 
 uint32_t load_sam_line(sam_block sb){
     
-    int32_t j = 0;
+    uint32_t j = 0;
     read_line rline = sb->reads->lines;
     qv_line qvline = sb->QVs->qv_lines;
     
@@ -613,13 +613,13 @@ uint32_t load_sam_line(sam_block sb){
         // Read the QVs and translate them to a 0-based scale
         // Check if the read is inversed
         if (rline->invFlag & 16) { // The read is inverted
-            for (j = qvline->columns - 1; j >= 0; j--) {
-                qvline->data[j] = (*ptr) - 33, ptr++;
+            for (j = qvline->columns; j >= 1; j--) {
+                qvline->data[j-1] = (*ptr) - 33, ptr++;
             }
         }
         else{ // The read is not inversed
-            for (j = 0; j < qvline->columns; j++) {
-                qvline->data[j] = (*ptr) - 33, ptr++;
+            for (j = 1; j < qvline->columns+1; j++) {
+                qvline->data[j-1] = (*ptr) - 33, ptr++;
             }
         }
         
@@ -660,7 +660,7 @@ uint32_t load_qv_training_block(qv_block QV){
     
     qv_line qvline = QV->qv_lines;
     
-    int32_t j = 0, i = 0;
+    uint32_t j = 0, i = 0;
     
     long int oset = ftell(QV->fs);
     
@@ -670,7 +670,7 @@ uint32_t load_qv_training_block(qv_block QV){
     
     uint32_t invFlag;
     
-    for (i = 0; i < QV->block_length; i++) {
+    for (i = 1; i < QV->block_length+1; i++) {
         
         // Read compulsory fields
         if (fgets(buffer, 1024, QV->fs)) {
@@ -700,13 +700,13 @@ uint32_t load_qv_training_block(qv_block QV){
             // Read the QVs and translate them to a 0-based scale
             // Check if the read is inversed
             if (invFlag & 16) { // The read is inverted
-                for (j = QV->columns - 1; j >= 0; j--) {
-                    qvline[i].data[j] = (*ptr) - 33, ptr++;
+                for (j = QV->columns; j >= 1; j--) {
+                    qvline[i-1].data[j-1] = (*ptr) - 33, ptr++;
                 }
             }
             else{ // The read is not inversed
-                for (j = 0; j < QV->columns; j++) {
-                    qvline[i].data[j] = (*ptr) - 33, ptr++;
+                for (j = 1; j < QV->columns + 1; j++) {
+                    qvline[i-1].data[j-1] = (*ptr) - 33, ptr++;
                 }
             }
         }

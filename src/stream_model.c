@@ -54,7 +54,7 @@ uint32_t update_model(stream_model model, int32_t x){
 
 void send_value_to_as(Arithmetic_stream as, stream_model model, int32_t x){
     
-    uint32_t i = 0;
+    int32_t i = 0;
     
     uint32_t cumCountX_1 = 0, cumCountX = 0;
     
