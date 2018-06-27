@@ -1,0 +1,10 @@
+# Directory attributes files
+.directory
+.DS_Store
+
+# Regeneratables
+build/
+
+# KDevelop project files
+.kdev4/
+Streamer_SAMfiles.kdev4

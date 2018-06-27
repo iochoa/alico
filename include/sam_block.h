@@ -80,6 +80,7 @@ struct compressor_info_t{
     uint8_t mode;
     struct qv_options_t *qv_opts;
     uint8_t lossiness;
+    uint8_t calqmode;
 };
 
 typedef struct id_models_t{
