@@ -36,6 +36,7 @@
  //    type: [A,i,f,Z,H,B],
  */
 
+#include <stdint.h>
 
 //lookup table corresponding to the most used tag-type pairs given in the specification (SAMv1.pdf)
 //static char tagTypeLUT[TAGTYPELUTLENGTH][4] = {"AMi","ASi","BCZ","BQZ","CCZ","CMi","COZ","CPi","CQZ","CSZ","CTZ","E2Z","FIi","FSZ","FZB","LBZ","H0i","H1i","H2i","HIi","IHi","MCZ","MDZ","MQi","NHi","NMi","OQZ","OPi","OCZ","PGZ","PQi","PTZ","PUZ","QTZ","Q2Z","R2Z","RGZ","RTZ","SAZ","SMi","TCi","U2Z","UQi"};

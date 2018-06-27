@@ -12,10 +12,18 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef LINUX
+#ifdef __linux__
 	#include <time.h>
 	#define _stat stat
 	#define _alloca alloca
+	#define restrict __restrict__
+#elif __CYGWIN__
+	#include <time.h>
+	#define _stat stat
+	#define _alloca __builtin_alloca
+
+	#include <malloc.h>
+
 	#define restrict __restrict__
 #elif __APPLE__
     #include <time.h>
@@ -28,7 +36,11 @@
 #endif
 
 struct hrtimer_t {
-#ifdef LINUX
+#ifdef __linux__
+	struct timespec start;
+	struct timespec stop;
+	struct timespec res;
+#elif __CYGWIN__
 	struct timespec start;
 	struct timespec stop;
 	struct timespec res;
@@ -53,6 +65,8 @@ int cb_log2(int x);
 
 // Missing log2 function
 #ifndef LINUX
+	#define log2(x) (log(x)/log(2.0))
+#elif __CYGWIN__
 	#define log2(x) (log(x)/log(2.0))
 #endif
 
