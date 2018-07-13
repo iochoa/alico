@@ -20,7 +20,7 @@ class SAMRecord {
  public:
     static const int NUM_FIELDS = 12;
 
-    SAMRecord::SAMRecord(
+    SAMRecord(
         const uint32_t pos,
         const std::string& cigar,
         const std::string& seq,
