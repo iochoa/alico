@@ -670,7 +670,7 @@ uint32_t load_qv_training_block(qv_block QV){
     
     uint32_t invFlag;
     
-    for (i = 1; i < QV->block_length+1; i++) {
+    for (i = 0; i < QV->block_length; i++) {
         
         // Read compulsory fields
         if (fgets(buffer, 1024, QV->fs)) {
@@ -701,17 +701,19 @@ uint32_t load_qv_training_block(qv_block QV){
             // Check if the read is inversed
             if (invFlag & 16) { // The read is inverted
                 for (j = QV->columns; j >= 1; j--) {
-                    qvline[i-1].data[j-1] = (*ptr) - 33, ptr++;
+                    qvline[i].data[j-1] = (*ptr) - 33, ptr++;
                 }
             }
             else{ // The read is not inversed
                 for (j = 1; j < QV->columns + 1; j++) {
-                    qvline[i-1].data[j-1] = (*ptr) - 33, ptr++;
+                    qvline[i].data[j-1] = (*ptr) - 33, ptr++;
                 }
             }
         }
-        else
+        else {
+            fseek(QV->fs, oset, SEEK_SET); //charlie
             return 1;
+        }
     }
     
     fseek(QV->fs, oset, SEEK_SET);

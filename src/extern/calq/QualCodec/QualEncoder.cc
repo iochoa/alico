@@ -130,25 +130,25 @@ void QualEncoder::finishBlock(void) {
     }
 }
 
-size_t QualEncoder::writeBlock(/*CQFile *cqFile*/) {
+size_t QualEncoder::writeBlock(CQFile *cqFile) {
     compressedMappedQualSize_ = 0;
     compressedUnmappedQualSize_ = 0;
 
     // Write block parameters
-    // compressedMappedQualSize_ += cqFile->writeUint32(posOffset_);
-    // compressedMappedQualSize_ += cqFile->writeUint32((uint32_t)qualityValueOffset_);
+    compressedMappedQualSize_ += cqFile->writeUint32(posOffset_);
+    compressedMappedQualSize_ += cqFile->writeUint32((uint32_t)qualityValueOffset_);
 
     // Write inverse quantization LUTs
-    // compressedMappedQualSize_ += cqFile->writeQuantizers(quantizers_);
+    compressedMappedQualSize_ += cqFile->writeQuantizers(quantizers_);
 
     // Write unmapped quality values
     unsigned char *uqv = (unsigned char *)unmappedQualityValues_.c_str();
     size_t uqvSize = unmappedQualityValues_.length();
     if (uqvSize > 0) {
-        //compressedUnmappedQualSize_ += cqFile->writeUint8(0x01);
-        //compressedUnmappedQualSize_ += cqFile->writeQualBlock(uqv, uqvSize);
+        compressedUnmappedQualSize_ += cqFile->writeUint8(0x01);
+        compressedUnmappedQualSize_ += cqFile->writeQualBlock(uqv, uqvSize);
     } else {
-        //compressedUnmappedQualSize_ += cqFile->writeUint8(0x00);
+        compressedUnmappedQualSize_ += cqFile->writeUint8(0x00);
     }
 
     // Write mapped quantizer indices
@@ -159,10 +159,10 @@ size_t QualEncoder::writeBlock(/*CQFile *cqFile*/) {
     unsigned char *mqi = (unsigned char *)mqiString.c_str();
     size_t mqiSize = mqiString.length();
     if (mqiSize > 0) {
-        //compressedMappedQualSize_ += cqFile->writeUint8(0x01);
-        //compressedMappedQualSize_ += cqFile->writeQualBlock(mqi, mqiSize);
+        compressedMappedQualSize_ += cqFile->writeUint8(0x01);
+        compressedMappedQualSize_ += cqFile->writeQualBlock(mqi, mqiSize);
     } else {
-        //compressedMappedQualSize_ += cqFile->writeUint8(0x00);
+        compressedMappedQualSize_ += cqFile->writeUint8(0x00);
     }
 
     // Write mapped quality value indices
@@ -175,10 +175,10 @@ size_t QualEncoder::writeBlock(/*CQFile *cqFile*/) {
         unsigned char *mqvi = (unsigned char *)mqviString.c_str();
         size_t mqviSize = mqviString.length();
         if (mqviSize > 0) {
-            //compressedMappedQualSize_ += cqFile->writeUint8(0x01);
-            //compressedMappedQualSize_ += cqFile->writeQualBlock(mqvi, mqviSize);
+            compressedMappedQualSize_ += cqFile->writeUint8(0x01);
+            compressedMappedQualSize_ += cqFile->writeQualBlock(mqvi, mqviSize);
         } else {
-            //compressedMappedQualSize_ += cqFile->writeUint8(0x00);
+            compressedMappedQualSize_ += cqFile->writeUint8(0x00);
         }
     }
 

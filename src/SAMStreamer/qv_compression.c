@@ -264,6 +264,7 @@ double QVs_decompress(Arithmetic_stream as, qv_block info, uint8_t inv, char* qu
         q_state = decompress_qv(as, info->model, get_qv_model_index(s, idx));
         quals[s] = q->output_alphabet->symbols[q_state] + 33;
         prev_qv = quals[s] - 33;
+        printf("%d\n", s);
     }
     
     /*if (inv) {

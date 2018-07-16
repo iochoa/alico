@@ -20,7 +20,7 @@ class SAMRecord {
  public:
     static const int NUM_FIELDS = 12;
 
-    explicit SAMRecord(char *fields[NUM_FIELDS]);
+    explicit SAMRecord(const uint32_t pos, const std::string& cigar, const std::string& seq, const std::string& qual);
     ~SAMRecord(void);
 
     void addToPileupQueue(SAMPileupDeque *samPileupDeque) const;

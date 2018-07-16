@@ -13,19 +13,19 @@
 
 namespace calq {
 
-SAMRecord::SAMRecord(char *fields[NUM_FIELDS])
-    : qname(fields[0]),
-      flag((uint16_t)atoi(fields[1])),
-      rname(fields[2]),
-      pos((uint32_t)atoi(fields[3])),
-      mapq((uint8_t)atoi(fields[4])),
-      cigar(fields[5]),
-      rnext(fields[6]),
-      pnext((uint32_t)atoi(fields[7])),
-      tlen((int64_t)atoi(fields[8])),
-      seq(fields[9]),
-      qual(fields[10]),
-      opt(fields[11]),
+SAMRecord::SAMRecord(const uint32_t pos, const std::string& cigar, const std::string& seq, const std::string& qual)
+    : qname("0"),
+      flag(0),
+      rname("0"),
+      pos(pos),
+      mapq(0),
+      cigar(cigar),
+      rnext("0"),
+      pnext(0),
+      tlen(0),
+      seq(seq),
+      qual("0"),
+      opt("0"),
       posMin(0),
       posMax(0),
       mapped_(false) {

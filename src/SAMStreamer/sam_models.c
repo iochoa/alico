@@ -851,11 +851,11 @@ void initialize_qv_model(Arithmetic_stream as, qv_block qvBlock, uint8_t decompr
         read_codebooks(as, qvBlock);
     }
     else{
-        
         // Load the traininig block
         
         load_qv_training_block(qvBlock);
         
+        //printf("%s\n", fgets(buffer, 1024, qvBlock->fs));
         // We need to rewind the file
         
         

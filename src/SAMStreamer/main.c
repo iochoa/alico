@@ -158,7 +158,7 @@ int main(int argc, const char * argv[]) {
             case 'q':
                 mode = COMPRESSION;
                 lossiness = LOSSY;
-//                 opts.mode = MODE_RATIO;
+                opts.mode = MODE_RATIO;
                 calq = 1;
                 i += 1;
                 break; 
@@ -286,12 +286,13 @@ int main(int argc, const char * argv[]) {
     switch (mode) {
         case COMPRESSION: {
             comp_info.fsam = fopen( input_name, "r");
+	    comp_info.fref = fopen( ref_name, "r"); //charlie
             if (calq) {
                 if ( comp_info.fsam == NULL ) {
                     fputs ("File error while opening sam file\n", stderr); exit (1);
                 }
             } else {
-                comp_info.fref = fopen ( ref_name , "r" );
+                //comp_info.fref = fopen ( ref_name , "r" );
 
                 if ( comp_info.fref == NULL || comp_info.fsam == NULL ){
                     fputs ("File error while opening ref and sam files\n",stderr); exit (1);
@@ -324,9 +325,9 @@ int main(int argc, const char * argv[]) {
                 exit(1);
             }
             waitpid(pid, NULL, 0);
-
             fclose(comp_info.fsam);
-            fclose(comp_info.fref);
+            if (!calq)
+                fclose(comp_info.fref);
             fclose(comp_info.fcomp);
             free(reference);
             time(&end_main);
