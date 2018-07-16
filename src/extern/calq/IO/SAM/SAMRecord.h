@@ -19,7 +19,8 @@ namespace calq {
 class SAMRecord {
  public:
     static const int NUM_FIELDS = 12;
-
+    
+    SAMRecord(char* fields[]);
     explicit SAMRecord(const uint32_t pos, const std::string& cigar, const std::string& seq, const std::string& qual);
     ~SAMRecord(void);
 
@@ -47,6 +48,7 @@ class SAMRecord {
     uint32_t posMax;  // 0-based rightmost mapping position
 
  private:
+    void computeMappingPositions(void);
     void check(void);
 
  private:
@@ -56,4 +58,3 @@ class SAMRecord {
 }  // namespace calq
 
 #endif  // CALQ_IO_SAM_SAMRECORD_H_
-
