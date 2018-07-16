@@ -99,7 +99,9 @@ void QualEncoder::addMappedRecordToBlock(const SAMRecord &samRecord) {
 
     samRecord.addToPileupQueue(&samPileupDeque_);
     samRecordDeque_.push_back(samRecord);
-
+    //both below comments print -1 (uninitialized?)
+    //printf("samPileupDeque_.posMin is %d\n", samPileupDeque_.posMin());
+    //printf("samRecord.posMin is %d\n", samRecord.posMin);
     while (samPileupDeque_.posMin() < samRecord.posMin) {
         int k = genotyper_.computeQuantizerIndex(samPileupDeque_.front().seq, samPileupDeque_.front().qual);
         mappedQuantizerIndices_.push_back(k);
@@ -107,6 +109,7 @@ void QualEncoder::addMappedRecordToBlock(const SAMRecord &samRecord) {
     }
 
     while (samRecordDeque_.front().posMax < samPileupDeque_.posMin()) {
+        //printf("inside loop\n");
         encodeMappedQual(samRecordDeque_.front());
         samRecordDeque_.pop_front();
     }
@@ -207,7 +210,7 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
            opLen = opLen*10 + (size_t)samRecord.cigar[cigarIdx] - (size_t)'0';
            continue;
        }
-
+       //this is zero --> printf("deque size is %d\n", mappedQuantizerIndices_.size());
        switch (samRecord.cigar[cigarIdx]) {
        case 'M':
        case '=':
@@ -215,8 +218,12 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
            // Encode opLen quality values with computed quantizer indices
            for (size_t i = 0; i < opLen; i++) {
                int q = (int)samRecord.qual[qualIdx++] - qualityValueOffset_;
+		printf("quantizerIndicesIdx is %d\n", quantizerIndicesIdx);
                int quantizerIndex = mappedQuantizerIndices_[quantizerIndicesIdx++];
+    		printf("%d\n", quantizerIndex); //charlie: quantizerIndex is wrong! the below line throws an error as there is no element with that key in the map.
+		
                int qualityValueIndex = quantizers_.at(quantizerIndex).valueToIndex(q);
+    		//this is never printed because of above error --> printf("almost through\n");
                mappedQualityValueIndices_.at(quantizerIndex).push_back(qualityValueIndex);
            }
            break;
