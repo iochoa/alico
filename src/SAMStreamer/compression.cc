@@ -98,16 +98,11 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
         
         static bool unmapped_reads = false;
         uint8_t chr_change;
-	//char buffer[1024];
-	//printf("%s\n", fgets(buffer, 1024, samBlock->fs));
-        //printf("%d\n", samBlock->fs);
         // Load the data from the file
         if(load_sam_line(samBlock)){
 
-	printf("load sam line 1\n");        
             return 0;
     }
-	//else printf("load sam line 0\n");
         // If read is unmapped and reference name is *, we assume that all the remaining
         // lines are unmapped and have reference name *.
         // If the read is unmapped but has a position/reference name, we simply use that
@@ -187,7 +182,7 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
         compress_aux_idoia(as, samBlock->aux->models, samBlock->aux->aux_str, samBlock->aux->aux_cnt, samBlock->aux);
         //idoia
         if (calq) {
-            fprintf(stdout, "line compression w/ calq\n");
+            //fprintf(stdout, "line compression w/ calq\n");
             uint32_t pos = 0;
             std::string cigar = "";
             std::string seq = "";
@@ -215,7 +210,7 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
         abort();
     }
     catch (...) {
-        std::cerr << "Unkown error occurred" << std::endl;
+        std::cerr << "Unknown error occurred" << std::endl;
         abort();
     }
 

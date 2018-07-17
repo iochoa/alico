@@ -40,7 +40,6 @@ SAMRecord::SAMRecord(
     } else {
         mapped_ = true;
     }
-
     computeMappingPositions();
 }
 
@@ -96,6 +95,7 @@ void SAMRecord::addToPileupQueue(SAMPileupDeque *samPileupDeque_) const {
                 samPileupDeque_->pileups_[pileupIdx].qual += qual[idx];
                 idx++; pileupIdx++;
             }
+	    //idx += opLen;
             break;
         case 'I':
         case 'S':
@@ -154,9 +154,8 @@ void SAMRecord::computeMappingPositions(void)
     if (mapped_ == true) {
         // Compute 0-based first position and 0-based last position this record
         // is mapped to on the reference used for alignment
-        posMin = pos - 1;
-        posMax = pos - 1;
-
+        //posMin = pos - 1; commented out - charlie
+        //posMax = pos - 1; commented out - charlie
         size_t cigarIdx = 0;
         size_t cigarLen = cigar.length();
         uint32_t opLen = 0;  // length of current CIGAR operation
@@ -187,7 +186,6 @@ void SAMRecord::computeMappingPositions(void)
             }
             opLen = 0;
         }
-
         posMax -= 1;
     }
 }
