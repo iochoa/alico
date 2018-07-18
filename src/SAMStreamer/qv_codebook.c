@@ -128,7 +128,7 @@ uint32_t decompress_char_array(Arithmetic_stream as, stream_model *model, int *a
         a[i] = read_value_from_as(as, model[ctx]);
         ctx = a[i];
         
-        if (a[i] == '\n')//eol)
+        if (a[i] == eol)
             return 1;
     }
     

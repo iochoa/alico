@@ -18,12 +18,12 @@
         // Defines for Windows (32-bit)
         #define OS_WINDOWS_32
     #endif
-#elif __CYGWIN__
+#elif defined(__CYGWIN__)
     #define OS_LINUX
-#elif __APPLE__
+#elif defined(__APPLE__)
     // Defines for Apple (all Mac OSes and iOSes)
     #define OS_APPLE
-#elif __linux__
+#elif defined(__linux__)
     // Defines for Linux
     #define OS_LINUX
 #else

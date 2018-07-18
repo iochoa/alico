@@ -21,11 +21,11 @@ SAMRecord::SAMRecord(
     : qname(""),
       flag((uint16_t)0),
       rname(""),
-      pos((uint32_t)0),
+      pos(pos),
       mapq((uint8_t)0),
       cigar(cigar),
       rnext(""),
-      pnext((uint32_t)pos),
+      pnext((uint32_t)0),
       tlen((int64_t)0),
       seq(seq),
       qual(qual),
@@ -154,8 +154,8 @@ void SAMRecord::computeMappingPositions(void)
     if (mapped_ == true) {
         // Compute 0-based first position and 0-based last position this record
         // is mapped to on the reference used for alignment
-        //posMin = pos - 1; commented out - charlie
-        //posMax = pos - 1; commented out - charlie
+        posMin = pos - 1;
+        posMax = pos - 1;
         size_t cigarIdx = 0;
         size_t cigarLen = cigar.length();
         uint32_t opLen = 0;  // length of current CIGAR operation

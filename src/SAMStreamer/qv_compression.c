@@ -252,7 +252,6 @@ double QVs_decompress(Arithmetic_stream as, qv_block info, uint8_t inv, char* qu
     
     // Select first column's codebook with no left context
     q = choose_quantizer(info->qlist, &info->well, 0, 0, &idx, &foo);
-    
     // Quantize, compress and calculate error simultaneously
     // Reading in the lines corrects the quality values to alphabet offsets
     q_state = decompress_qv(as, info->model, get_qv_model_index(0, idx));
