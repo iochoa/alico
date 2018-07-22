@@ -156,7 +156,7 @@ int main(int argc, const char * argv[]) {
                 break;
             // COMPRESSION WITH CALQ
             case 'q':
-                mode = COMPRESSION;
+                //mode = COMPRESSION;
                 lossiness = LOSSY;
                 opts.mode = MODE_RATIO;
                 calq = 1;
@@ -318,7 +318,7 @@ int main(int argc, const char * argv[]) {
             if (pid == 0) {
                 char* argv[4];
                 argv[0] = "gzip";
-                argv[1] = "-fk";
+                argv[1] = "-f";
                 argv[2] = UNMAPPED_READS;
                 argv[3] = NULL;
                 execvp(argv[0], argv);
@@ -326,8 +326,7 @@ int main(int argc, const char * argv[]) {
             }
             waitpid(pid, NULL, 0);
             fclose(comp_info.fsam);
-            if (!calq)
-                fclose(comp_info.fref);
+            fclose(comp_info.fref);
             fclose(comp_info.fcomp);
             free(reference);
             time(&end_main);
@@ -346,7 +345,7 @@ int main(int argc, const char * argv[]) {
             if (pid == 0) {
                 char* argv[4];
                 argv[0] = "gzip";
-                argv[1] = "-dfk";
+                argv[1] = "-df";
                 argv[2] = ZIPPED_READS;
                 argv[3] = NULL;
                 execvp(argv[0], argv);

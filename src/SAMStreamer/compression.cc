@@ -15,6 +15,7 @@
 
 #include "IO/SAM/SAMRecord.h"
 #include "QualCodec/QualEncoder.h"
+#include "QualCodec/QualDecoder.h"
 #include "Common/Exceptions.h"
 #include "IO/CQ/CQFile.h"
 
@@ -84,17 +85,17 @@ static void extract_SAM_data_for_calq(sam_block samBlock, uint32_t * const pos, 
     }
 }
 
-int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq)  {
+int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq/*, calq::CQFile& cqFile, calq::QualEncoder& qualEncoder*/)  {
     try {
          //if (calq) {
             //Max33 Phred+33 [0,93]
-            int polyploidy_ = 2;
-            int qualityValueMax_ = 93;
-            int qualityValueMin_ = 0;
-            int qualityValueOffset_ = 33;
+        int polyploidy_ = 2;
+        int qualityValueMax_ = 93;
+        int qualityValueMin_ = 0;
+        int qualityValueOffset_ = 33;
 
-            calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
-         //}
+        calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
+                     //}
         
         static bool unmapped_reads = false;
         uint8_t chr_change;
@@ -149,7 +150,6 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
         // Compress sam line
         
         chr_change = compress_rname(as, samBlock->rnames->models, *samBlock->rnames->rnames);
-        
         calq::CQFile cqFile("newCQFile.cq", calq::File::MODE_WRITE);
     
         if (chr_change == 1){
@@ -192,6 +192,8 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
             calq::SAMRecord samRecord(pos, cigar, seq, qual);
             build_SAMRecord_for_calq(samBlock, &samRecord);
             qualEncoder.addMappedRecordToBlock(samRecord);
+            //qualEncoder.finishBlock();
+            //qualEncoder.writeBlock(&cqFile);
         } else {
             if (lossiness == LOSSY) {
                 QVs_compress(as, samBlock->QVs, samBlock->QVs->qArray);
@@ -217,7 +219,7 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
     return 1;
 }
 
-int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness) {
+int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness, uint8_t calqmode) {
     
     int32_t chr_change = 0;
     
@@ -225,7 +227,8 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness)
     
     struct sam_line_t sline;
     
-    
+    calq::QualDecoder qualDecoder;
+
     //This is only for fixed length? i think so.
     sline.readLength = samBlock->read_length;
     //sline.readLength = samBlock->reads->models->read_length;
@@ -270,14 +273,25 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness)
     //decompress_aux(as, samBlock->aux, sline.aux);
     decompress_aux_idoia(as, samBlock->aux, sline.aux);
     //idoia
+    if (calqmode) {
+        //fprintf(stdout, "line compression w/ calq\n");
+        uint32_t pos = 0;
+        std::string cigar = "";
+        std::string seq = "";
+        std::string qual = "";
+        extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
+        calq::SAMRecord samRecord(pos, cigar, seq, qual);
+        build_SAMRecord_for_calq(samBlock, &samRecord);
+        qualDecoder.decodeMappedRecordFromBlock(samRecord);
+    } else {
    
-    if (lossiness == LOSSY) {
+        if (lossiness == LOSSY) {
             QVs_decompress(as, samBlock->QVs, decompression_flag, sline.quals);
-    }
-    else
-        QVs_decompress_lossless(as, samBlock->QVs, decompression_flag, sline.quals, (int)strlen(sline.read));
+        }
+        else
+            QVs_decompress_lossless(as, samBlock->QVs, decompression_flag, sline.quals, (int)strlen(sline.read));
 
-   
+    }
     sline.readLength = samBlock->reads->models->read_length;
     // printf("sline read length before printing is: %d\n", sline.readLength); 
     print_line(&sline, 0, samBlock->fs);
@@ -622,11 +636,19 @@ void* compress(void *thread_info){
     else
         compress_int(as, samBlock->codebook_model, LOSSLESS);
    
+    int polyploidy_ = 2;
+    int qualityValueMax_ = 93;
+    int qualityValueMin_ = 0;
+    int qualityValueOffset_ = 33;
+
+
+    calq::CQFile cqFile("newCQFile.cq", calq::File::MODE_WRITE);
+    calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
     //printf("%s\n", fgets(buffer, 1024, samBlock->QVs->fs)); return buffer;
-   printf("start line compression\n"); 
-    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode)) {
+    printf("start line compression\n"); 
+    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode/*, cqFile, qualEncoder*/)) {
         ++lineCtr;
-        if (lineCtr % 1000000 == 0) {
+        if (lineCtr % 10000 == 0) {
           printf("[cbc] compressed %llu lines\n", lineCtr);
         }
     }
@@ -675,7 +697,7 @@ void* decompress(void *thread_info){
     }
     
     // Decompress the blocks
-    while(decompress_line(as, samBlock, info->lossiness)){
+    while(decompress_line(as, samBlock, info->lossiness, info->calqmode)){
         n++;
     }
     

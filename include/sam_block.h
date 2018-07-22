@@ -463,7 +463,7 @@ int compress_cigar(Arithmetic_stream as, read_models models, char *cigar, uint8_
 
 int compress_block(Arithmetic_stream as, sam_block samBlock);
 int decompress_block(Arithmetic_stream as, sam_block samBlock);
-int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness);
+int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness, uint8_t calqmode);
 void* compress(void *thread_info);
 void* decompress(void *thread_info);
 
