@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <stdbool.h>
+#include <algorithm>
 #include "sam_block.h"
 #include "read_compression.h"
 
@@ -76,26 +77,24 @@ static void build_SAMRecord_for_calq(sam_block samBlock, calq::SAMRecord * const
     }
 }
 
-static void extract_SAM_data_for_calq(sam_block samBlock, uint32_t * const pos, std::string * const cigar, std::string * const seq, std::string * qual) {
+static void extract_SAM_data_for_calq(sam_block samBlock, uint32_t * const pos, std::string * const cigar, std::string * const seq, std::string * qual, int cntr) {
     *pos = samBlock->reads->lines->pos;
     *cigar = samBlock->reads->lines->cigar;
     *seq = samBlock->reads->lines->read;
     for (int i = 0; i < samBlock->QVs->qv_lines->columns; i++) {
-        *qual += samBlock->QVs->qv_lines->data[i];
+        *qual += (samBlock->QVs->qv_lines->data[i] + char(33));
+    }
+    if (!(cntr % 2)) {
+        std::reverse(qual->begin(), qual->end());
     }
 
 }
 
-int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, calq::CQFile& cqFile, calq::QualEncoder& qualEncoder, Arithmetic_stream as1, uint64_t context[25][6], char* prefix)  {
+int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, calq::CQFile& cqFile, calq::QualEncoder& qualEncoder, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, int * cntr)  {
     try {
          /*if (calq) {
             //Max33 Phred+33 [0,93]
-        int polyploidy_ = 2;
-        int qualityValueMax_ = 93;
-        int qualityValueMin_ = 0;
-        int qualityValueOffset_ = 33;
 
-        calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
                      //}*/
         
         static bool unmapped_reads = false;
@@ -153,10 +152,6 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
         chr_change = compress_rname(as, samBlock->rnames->models, *samBlock->rnames->rnames);
     
         if (chr_change == 1){
-            if (calq) {
-                qualEncoder.finishBlock();
-                qualEncoder.writeBlock(&cqFile);
-            }
             // Store Ref sequence in memory
             store_reference_in_memory(samBlock->fref, as1, context, prefix);
             // Reset cumsumP
@@ -187,10 +182,16 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
             std::string cigar = "";
             std::string seq = "";
             std::string qual = "";
-            extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
+            std::cout << "Counter: " << *cntr << std::endl;
+            *cntr = *cntr + 1;
+            std::cout << "Counter: " << *cntr << std::endl;
+
+            extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual, *cntr);
+            char *fields[calq::SAMRecord::NUM_FIELDS];
             calq::SAMRecord samRecord(pos, cigar, seq, qual);
             //build_SAMRecord_for_calq(samBlock, &samRecord);
             qualEncoder.addMappedRecordToBlock(samRecord);
+            std::cout << "Added mapped record to block" << std::endl;
             //qualEncoder.finishBlock();
             //qualEncoder.writeBlock(&cqFile);
         } else {
@@ -276,7 +277,8 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness,
         std::string cigar = "";
         std::string seq = "";
         std::string qual = "";
-        //extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
+        int cntr = 0;
+        extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual, cntr);
         calq::SAMRecord samRecord(pos, cigar, seq, qual);
         //build_SAMRecord_for_calq(samBlock, &samRecord);
         qualDecoder.decodeMappedRecordFromBlock(samRecord);
@@ -645,20 +647,24 @@ void* compress(void *thread_info){
         compress_int(as, samBlock->codebook_model, LOSSLESS);
    
     int polyploidy_ = 2;
-    int qualityValueMax_ = 93;
+    int qualityValueMax_ = 41;
     int qualityValueMin_ = 0;
     int qualityValueOffset_ = 0; //33;
 
 
     calq::CQFile cqFile(QUAL_VALUES, calq::File::MODE_WRITE);
+    std::cout << samBlock->block_length << std::endl;
+    cqFile.writeHeader(10000);
+
     calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
     printf("start line compression\n"); 
-    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, cqFile, qualEncoder, as1, context, prefix)) {
+    int cntr = 0;
+    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, cqFile, qualEncoder, as1, context, prefix, &cntr)) {
         ++lineCtr;
         if (lineCtr % 100000 == 0) {
+          qualEncoder.finishBlock();
+          qualEncoder.writeBlock(&cqFile);
           printf("[cbc] compressed %llu lines\n", lineCtr);
-          //qualEncoder.finishBlock();
-          //qualEncoder.writeBlock(&cqFile);
         }
     }
     qualEncoder.finishBlock();
