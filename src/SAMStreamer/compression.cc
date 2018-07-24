@@ -182,18 +182,15 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
             std::string cigar = "";
             std::string seq = "";
             std::string qual = "";
-            std::cout << "Counter: " << *cntr << std::endl;
+            //std::cout << "Counter: " << *cntr << std::endl;
             *cntr = *cntr + 1;
-            std::cout << "Counter: " << *cntr << std::endl;
+            //std::cout << "Counter: " << *cntr << std::endl;
 
             extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual, *cntr);
-            char *fields[calq::SAMRecord::NUM_FIELDS];
             calq::SAMRecord samRecord(pos, cigar, seq, qual);
-            //build_SAMRecord_for_calq(samBlock, &samRecord);
+            for (int i = 0; i < samBlock->QVs->qv_lines->columns; i++) printf("%c", qual[i]); printf("\n");
             qualEncoder.addMappedRecordToBlock(samRecord);
-            std::cout << "Added mapped record to block" << std::endl;
-            //qualEncoder.finishBlock();
-            //qualEncoder.writeBlock(&cqFile);
+            //std::cout << "Added mapped record to block" << std::endl;
         } else {
             if (lossiness == LOSSY) {
                 QVs_compress(as, samBlock->QVs, samBlock->QVs->qArray);
@@ -649,10 +646,10 @@ void* compress(void *thread_info){
     int polyploidy_ = 2;
     int qualityValueMax_ = 41;
     int qualityValueMin_ = 0;
-    int qualityValueOffset_ = 0; //33;
+    int qualityValueOffset_ = 33;
 
 
-    calq::CQFile cqFile(QUAL_VALUES, calq::File::MODE_WRITE);
+    calq::CQFile cqFile("quality_values", calq::File::MODE_WRITE);
     std::cout << samBlock->block_length << std::endl;
     cqFile.writeHeader(10000);
 

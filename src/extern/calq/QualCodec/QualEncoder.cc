@@ -86,7 +86,7 @@ void QualEncoder::addUnmappedRecordToBlock(const SAMRecord &samRecord) {
 }
 
 void QualEncoder::addMappedRecordToBlock(const SAMRecord &samRecord) {
-    CALQ_LOG("here i am");
+    //CALQ_LOG("here i am");
     if (nrMappedRecords() == 0) {
         posOffset_ = samRecord.posMin;
         samPileupDeque_.setPosMin(samRecord.posMin);
