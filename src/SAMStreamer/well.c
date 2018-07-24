@@ -9,7 +9,6 @@
 uint32_t well_1024a(struct well_state_t *state) {
 	uint32_t *s = state->state;
 	uint32_t n = state->n;
-	printf("in well\n");
 	uint32_t z0 = s[(n+31)&31];
 	uint32_t v_m1 = s[(n+3)&31];
 	uint32_t v_m2 = s[(n+24)&31];

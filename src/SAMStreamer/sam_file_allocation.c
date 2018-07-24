@@ -618,11 +618,10 @@ uint32_t load_sam_line(sam_block sb){
             }
         }
         else{ // The read is not inversed
-            for (j = 1; j < qvline->columns+1; j++) {
-                qvline->data[j-1] = (*ptr) - 33, ptr++;
+            for (j = 0; j < qvline->columns; j++) {
+                qvline->data[j] = (*ptr) - 33, ptr++;
             }
         }
-        
         
         // Read the AUX fields until end of line, and store the MD field
         int auxCnt = 0;

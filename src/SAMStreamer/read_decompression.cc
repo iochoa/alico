@@ -20,8 +20,17 @@ using namespace std;
 //                  STORE REFERENCE IN MEMORY                   //
 //                                                              //
 //**************************************************************//
+int context_index(char prefix){
+    if (prefix == 'A') return 0;
+    else if (prefix == 'T') return 1;
+    else if (prefix == 'C') return 2;
+    else if (prefix == 'G') return 3;
+    return 4;
+}
+
 int store_reference_in_memory(FILE* refFile){
     uint32_t letterCount, endoffile = 1;
+
     char header[1024];
     char buf[1024];
     
@@ -43,6 +52,64 @@ int store_reference_in_memory(FILE* refFile){
       for (int i = 0; i < 1024; i++) {
         if (buf[i] == '\n') break;
         reference[letterCount] = toupper(buf[i]);
+
+           letterCount++;
+      }
+    }
+
+    reference[letterCount] = '\0';
+
+    reference = (char *) realloc(reference, letterCount + 1);
+    
+    if (endoffile)
+        return END_GENOME_FLAG;
+    
+    return letterCount;
+    
+}
+
+
+int store_reference_in_memory(FILE* refFile, Arithmetic_stream as1, uint64_t context[25][6], char* prefix){
+    uint32_t letterCount, endoffile = 1;
+    uint64_t previous;
+    char header[1024];
+    char buf[1024];
+    int context_idx, curr_idx;
+    
+    reference = (char *) calloc(MAX_BP_CHR,sizeof(char));
+    
+    // ******* Read and Store Reference****** //
+    letterCount = 0;
+    
+    // Remove the first header
+    if (ftell(refFile) == 0) {
+      fgets(header, sizeof(header), refFile);
+    }
+    
+    while (fgets(buf, 1024, refFile)) {
+      if (buf[0] == '>' || reference[0] == '@') {
+        endoffile = 0;
+        break;
+      }
+      for (int i = 0; i < 1024; i++) {
+        if (buf[i] == '\n') break;
+        reference[letterCount] = toupper(buf[i]);
+
+        if(prefix[0]=='F') {prefix[0]=reference[letterCount];}
+        else if(prefix[1]=='F') {prefix[1]=reference[letterCount];}
+        else {
+            context_idx = context_index(prefix[0])*5+context_index(prefix[1]);
+            curr_idx = context_index(reference[letterCount]);
+
+            previous = 0;
+            for(int i=0; i<curr_idx; i++) {previous+=context[context_idx][i];}
+            
+            arithmetic_encoder_step(as1, ((uint32_t)previous), ((uint32_t)(previous+context[context_idx][curr_idx])), ((uint32_t)context[context_idx][5]));
+            context[context_idx][curr_idx]++; context[context_idx][5]++;
+
+            prefix[0] = prefix[1];
+            prefix[1] = reference[letterCount];
+        }
         letterCount++;
       }
     }

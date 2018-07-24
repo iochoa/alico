@@ -22,6 +22,8 @@ static char *MAPPED_READS = "mapped_reads";
 static char *HEADERS = "headers";
 static char *UNMAPPED_READS = "unmapped_reads";
 static char *ZIPPED_READS = "unmapped_reads.gz";
+static char *REFEREN_COMP = "reference_comp";
+static char *QUAL_VALUES = "quality_values";
 
 /**
  * Displays a usage name
@@ -309,6 +311,7 @@ int main(int argc, const char * argv[]) {
 
             comp_info.funmapped = fopen(UNMAPPED_READS, "w");
             comp_info.fcomp = fopen(MAPPED_READS, "w");
+            comp_info.frefcom = fopen(REFEREN_COMP, "w"); //hongyi
             comp_info.qv_opts = &opts;
             
             compress((void *)&comp_info);
@@ -328,6 +331,7 @@ int main(int argc, const char * argv[]) {
             fclose(comp_info.fsam);
             fclose(comp_info.fref);
             fclose(comp_info.fcomp);
+            fclose(comp_info.frefcom);
             free(reference);
             time(&end_main);
             break;
@@ -357,6 +361,7 @@ int main(int argc, const char * argv[]) {
             fclose(headers_file);
 
             comp_info.fcomp = fopen(MAPPED_READS, "r");
+            comp_info.fqual = fopen(QUAL_VALUES, "r");
             comp_info.qv_opts = &opts;
             
             decompress((void *)&comp_info);

@@ -75,7 +75,10 @@ uint32_t compress_read(Arithmetic_stream as, read_models models, read_line samLi
 uint32_t reconstruct_read(Arithmetic_stream as, read_models models, uint32_t pos, uint8_t invFlag, char *read, uint32_t readLen, uint8_t chr_change, char *recCigar);
 uint32_t decompress_read(Arithmetic_stream as, sam_block sb, uint8_t chr_change, struct sam_line_t *sline);
 uint32_t decompress_cigar(Arithmetic_stream as, sam_block sb, struct sam_line_t *sline);
+int context_index(char prefix);
 int store_reference_in_memory(FILE* refFile);
+int store_reference_in_memory(FILE* refFile, Arithmetic_stream as1, uint64_t context[25][6], char* prefix);
+
 
 void foo();
 

@@ -243,7 +243,6 @@ double QVs_decompress(Arithmetic_stream as, qv_block info, uint8_t inv, char* qu
     uint32_t idx = 0, q_state = 0;
     uint8_t prev_qv = 0, foo;
     uint32_t columns = info->columns;
-    
     uint32_t s = 0;
     //char *line = (char *) _alloca(columns+1);
     quals[columns] = 0;
@@ -263,7 +262,6 @@ double QVs_decompress(Arithmetic_stream as, qv_block info, uint8_t inv, char* qu
         q_state = decompress_qv(as, info->model, get_qv_model_index(s, idx));
         quals[s] = q->output_alphabet->symbols[q_state] + 33;
         prev_qv = quals[s] - 33;
-        printf("%d\n", s);
     }
     
     /*if (inv) {
