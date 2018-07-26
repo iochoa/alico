@@ -20,6 +20,91 @@
 #include "Common/Exceptions.h"
 #include "IO/CQ/CQFile.h"
 
+char idx_convert(int i) {
+  if(i==0) {return 'A';}
+  else if(i==1) {return 'T';}
+  else if(i==2) {return 'C';}
+  else if(i==3) {return 'G';}
+  return 'N';
+}
+
+void reconstruct_ref(void *thread_info) {
+  int LCC;
+  int context_idx,t;
+  uint32_t tag;
+  uint64_t previous;
+  struct compressor_info_t *info = (struct compressor_info_t *)thread_info;
+  Arithmetic_stream as = alloc_arithmetic_stream(info->mode, info->frefcom);
+  char tt1[3],tt2[3];
+
+  char prefix[2]; prefix[0]='F'; prefix[1]='F';
+  uint64_t context[25][6];
+
+  for(int i=0; i<25; i++) {
+    for(int j=0; j<6; j++) {
+      if(j==5) {context[i][j]=5;}
+      else {context[i][j]=1;}
+    }
+  }
+
+  char head[1024];
+  char num[1024];
+  char tmp;
+  uint32_t total;
+
+  while(!feof(info->fsinchr)) {
+    fgets(head, 1024, info->fsinchr);
+    fgets(num, 1024, info->fsinchr);
+    if(prefix[0]=='F') {
+    	LCC=atoi(num);
+    	fgets(tt1, 3, info->fsinchr);
+    	fgets(tt2, 3, info->fsinchr);
+    }
+    fscanf(info->fsinchr, "%s\n", num);
+    fprintf(info->fref, "%s", head);
+    //printf("total num: %s\n", num);
+    total = atoi(num);
+    for(int i = 0; i<total; i++) {
+      if(prefix[0]=='F') {
+        fputc(tt1[0],info->fref);
+        prefix[0]=tt1[0];
+      }
+      else if(prefix[1]=='F') {
+        fputc(tt2[0],info->fref);
+        prefix[1]=tt2[0];
+      }
+      else {
+      //printf("%c %c\n",prefix[0],prefix[1]);
+        context_idx = context_index(prefix[0])*5+context_index(prefix[1]);
+
+	//for(int tt=0;tt<6;tt++) {printf("%lu ",context[context_idx][tt]);}
+	//printf("\n");
+
+        tag = arithmetic_get_symbol_range(as, ((uint32_t)(context[context_idx][5])));
+       //printf("%u\n",tag);
+        previous = 0; t=0;
+        while(previous<=tag) {
+          previous += context[context_idx][t];
+          t++;
+        }
+        t--;
+        tmp = idx_convert(t);
+        fputc(tmp,info->fref);
+        if((i+1)%LCC==0) {fputc('\n',info->fref);}
+        arithmetic_decoder_step(as, ((uint32_t)(previous-context[context_idx][t])), ((uint32_t)previous), ((uint32_t)context[context_idx][5]));
+        context[context_idx][t]++; context[context_idx][5]++;
+	prefix[0]=prefix[1]; prefix[1]=tmp;
+      }
+    }
+    if(total%LCC!=0) {fputc('\n',info->fref);}
+  }
+
+  free_os_stream(as->ios);
+  free(as);
+
+  return;
+}
+
 int print_line(struct sam_line_t *sline, uint8_t print_mode, FILE *fs, bool compressing){
     
     char foo[] = "CIGAR";
@@ -90,7 +175,7 @@ static void extract_SAM_data_for_calq(sam_block samBlock, uint32_t * const pos, 
 
 }
 
-int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, calq::CQFile& cqFile, calq::QualEncoder& qualEncoder, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, int * cntr)  {
+int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, calq::CQFile& cqFile, calq::QualEncoder& qualEncoder, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE *fsinchr, int* cntr)  {
     try {
          /*if (calq) {
             //Max33 Phred+33 [0,93]
@@ -153,7 +238,7 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
     
         if (chr_change == 1){
             // Store Ref sequence in memory
-            store_reference_in_memory(samBlock->fref, as1, context, prefix);
+            store_reference_in_memory_com(samBlock->fref, as1, context, prefix, fsinchr);
             // Reset cumsumP
             cumsumP = 0;
             memset(snpInRef, 0, MAX_BP_CHR);
@@ -656,20 +741,25 @@ void* compress(void *thread_info){
     calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
     printf("start line compression\n"); 
     int cntr = 0;
-    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, cqFile, qualEncoder, as1, context, prefix, &cntr)) {
+    
+    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, cqFile, qualEncoder, as1, context, prefix, info.fsinchr, &cntr)) {
         ++lineCtr;
         if (lineCtr % 100000 == 0) {
-          qualEncoder.finishBlock();
-          qualEncoder.writeBlock(&cqFile);
+          if (info.calqmode){
+            qualEncoder.finishBlock();
+            qualEncoder.writeBlock(&cqFile);
+          }
           printf("[cbc] compressed %llu lines\n", lineCtr);
         }
     }
-    qualEncoder.finishBlock();
-    qualEncoder.writeBlock(&cqFile);
+    if (info.calqmode){
+      qualEncoder.finishBlock();
+      qualEncoder.writeBlock(&cqFile);
+    }
     printf("done compressing lines\n"); 
     // Check if we are in the last block
     compress_rname(as, samBlock->rnames->models, "\n");
-    
+  
     //end the compression
     compress_file_size = encoder_last_step(as);
     compress_file_size1 = encoder_last_step(as1);    

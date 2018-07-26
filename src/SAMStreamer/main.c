@@ -23,6 +23,8 @@ static char *HEADERS = "headers";
 static char *UNMAPPED_READS = "unmapped_reads";
 static char *ZIPPED_READS = "unmapped_reads.gz";
 static char *REFEREN_COMP = "reference_comp";
+static char *REFEREN_NUM = "reference_num"; 
+static char *REFEREN_LOCAL = "reference_local";
 static char *QUAL_VALUES = "quality_values";
 
 /**
@@ -312,6 +314,7 @@ int main(int argc, const char * argv[]) {
             comp_info.funmapped = fopen(UNMAPPED_READS, "w");
             comp_info.fcomp = fopen(MAPPED_READS, "w");
             comp_info.frefcom = fopen(REFEREN_COMP, "w"); //hongyi
+            comp_info.fsinchr = fopen(REFEREN_NUM, "w"); //hongyi
             comp_info.qv_opts = &opts;
             
             compress((void *)&comp_info);
@@ -332,6 +335,7 @@ int main(int argc, const char * argv[]) {
             fclose(comp_info.fref);
             fclose(comp_info.fcomp);
             fclose(comp_info.frefcom);
+            fclose(comp_info.fsinchr);
             free(reference);
             time(&end_main);
             break;
@@ -339,12 +343,20 @@ int main(int argc, const char * argv[]) {
         case DECOMPRESSION: {
 
             comp_info.fsam = fopen(output_name, "w");
-            comp_info.fref = fopen ( ref_name , "r" );
-            if ( comp_info.fref == NULL || comp_info.fsam == NULL ){
+            change_dir(input_name);
+            comp_info.fref = fopen( REFEREN_LOCAL , "w" );
+            comp_info.frefcom = fopen(REFEREN_COMP, "r");
+            comp_info.fsinchr = fopen(REFEREN_NUM, "r");
+            
+            if ( comp_info.fref == NULL || comp_info.fsam == NULL || comp_info.frefcom == NULL || comp_info.fsinchr == NULL ){
                 fputs ("File error while opening ref and sam files\n",stderr); exit (1);
             }
+            reconstruct_ref((void *)&comp_info);
+            fclose(comp_info.fref);
+            comp_info.fref = fopen(REFEREN_LOCAL, "r");
+            fclose(comp_info.frefcom);
+            fclose(comp_info.fsinchr);
 
-            change_dir(input_name);
             pid_t pid = fork();
             if (pid == 0) {
                 char* argv[4];
@@ -363,7 +375,6 @@ int main(int argc, const char * argv[]) {
             comp_info.fcomp = fopen(MAPPED_READS, "r");
             comp_info.fqual = fopen(QUAL_VALUES, "r");
             comp_info.qv_opts = &opts;
-            
             decompress((void *)&comp_info);
 
             waitpid(pid, NULL, 0);

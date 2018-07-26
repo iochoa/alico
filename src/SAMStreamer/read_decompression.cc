@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <cinttypes>
 #include <iostream>
+#include <string.h>
 
 #define DEBUG false
 #define VERIFY false
@@ -68,12 +69,33 @@ int store_reference_in_memory(FILE* refFile){
     
 }
 
+void itoa(uint32_t number, char* strin){
+    if (number == 0){
+        strin[0] = '0'; strin[1] = '\0'; return;
+    }
+    int i=0;
+    int total;
+    char tmp[100];
+    while(number!=0) {
+	tmp[i] = ('0'+number%10);
+	i++;
+	number /= 10;
+    }
+    total = i;
+    i=0;
+    while (i < total){
+        strin[i] = tmp[total-1-i];
+        i++;
+    }
+    strin[i] = '\0';
+}
 
-int store_reference_in_memory(FILE* refFile, Arithmetic_stream as1, uint64_t context[25][6], char* prefix){
+int store_reference_in_memory_com(FILE* refFile, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE* fsinchr){
     uint32_t letterCount, endoffile = 1;
     uint64_t previous;
     char header[1024];
     char buf[1024];
+    char line_length[6];
     int context_idx, curr_idx;
     
     reference = (char *) calloc(MAX_BP_CHR,sizeof(char));
@@ -84,6 +106,7 @@ int store_reference_in_memory(FILE* refFile, Arithmetic_stream as1, uint64_t con
     // Remove the first header
     if (ftell(refFile) == 0) {
       fgets(header, sizeof(header), refFile);
+      fprintf(fsinchr, "%s", header);
     }
     
     while (fgets(buf, 1024, refFile)) {
@@ -91,12 +114,22 @@ int store_reference_in_memory(FILE* refFile, Arithmetic_stream as1, uint64_t con
         endoffile = 0;
         break;
       }
+      if(prefix[0]=='F') {
+      	itoa(strlen(buf)-1,line_length);
+	fprintf(fsinchr, "%s\n",line_length);
+      } 
       for (int i = 0; i < 1024; i++) {
         if (buf[i] == '\n') break;
         reference[letterCount] = toupper(buf[i]);
 
-        if(prefix[0]=='F') {prefix[0]=reference[letterCount];}
-        else if(prefix[1]=='F') {prefix[1]=reference[letterCount];}
+        if(prefix[0]=='F') {
+		prefix[0]=reference[letterCount];	
+		fprintf(fsinchr, "%c\n",prefix[0]);
+	}
+        else if(prefix[1]=='F') {
+		prefix[1]=reference[letterCount];
+		fprintf(fsinchr, "%c\n",prefix[1]);
+	}
         else {
             context_idx = context_index(prefix[0])*5+context_index(prefix[1]);
             curr_idx = context_index(reference[letterCount]);
@@ -113,7 +146,9 @@ int store_reference_in_memory(FILE* refFile, Arithmetic_stream as1, uint64_t con
         letterCount++;
       }
     }
-
+    char snum[11];
+    itoa(letterCount, snum);
+    fprintf(fsinchr, "%s\n", snum);
     reference[letterCount] = '\0';
 
     reference = (char *) realloc(reference, letterCount + 1);

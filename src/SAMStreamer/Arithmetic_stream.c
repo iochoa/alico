@@ -365,7 +365,7 @@ uint64_t encoder_last_step(Arithmetic_stream a) {
     
     // Create a dummy 0B file
     open_new_iofile(a->ios);
-    fclose(a->ios->fp);
+    //fclose(a->ios->fp);
     file_available++;
     
     return a->ios->written;

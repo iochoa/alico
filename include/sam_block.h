@@ -78,6 +78,7 @@ struct compressor_info_t{
     FILE *fcomp;
     FILE *funmapped;
     FILE *frefcom; //hongyi
+    FILE *fsinchr; //hongyi
     FILE *fqual;
     uint8_t mode;
     struct qv_options_t *qv_opts;
@@ -468,6 +469,8 @@ int decompress_block(Arithmetic_stream as, sam_block samBlock);
 int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness, uint8_t calqmode);
 void* compress(void *thread_info);
 void* decompress(void *thread_info);
+char idx_convert(int i);
+void reconstruct_ref(void *thread_info);
 
 uint32_t compute_num_digits(uint32_t x);
 

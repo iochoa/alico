@@ -77,7 +77,7 @@ uint32_t decompress_read(Arithmetic_stream as, sam_block sb, uint8_t chr_change,
 uint32_t decompress_cigar(Arithmetic_stream as, sam_block sb, struct sam_line_t *sline);
 int context_index(char prefix);
 int store_reference_in_memory(FILE* refFile);
-int store_reference_in_memory(FILE* refFile, Arithmetic_stream as1, uint64_t context[25][6], char* prefix);
+int store_reference_in_memory_com(FILE* refFile, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE* fsinchr);
 
 
 void foo();
