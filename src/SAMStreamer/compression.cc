@@ -175,7 +175,7 @@ static void extract_SAM_data_for_calq(sam_block samBlock, uint32_t * const pos, 
 
 }
 
-int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, calq::CQFile& cqFile, calq::QualEncoder& qualEncoder, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE *fsinchr, int* cntr)  {
+int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE * fsinchr, int * cntr, std::vector<calq::SAMRecord> &samRecords)  {
     try {
          /*if (calq) {
             //Max33 Phred+33 [0,93]
@@ -273,9 +273,8 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
 
             extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual, *cntr);
             calq::SAMRecord samRecord(pos, cigar, seq, qual);
-            for (int i = 0; i < samBlock->QVs->qv_lines->columns; i++) printf("%c", qual[i]); printf("\n");
-            qualEncoder.addMappedRecordToBlock(samRecord);
-            //std::cout << "Added mapped record to block" << std::endl;
+            samRecords.push_back(samRecord);
+            //qualEncoder.addMappedRecordToBlock(samRecord);
         } else {
             if (lossiness == LOSSY) {
                 QVs_compress(as, samBlock->QVs, samBlock->QVs->qArray);
@@ -734,28 +733,39 @@ void* compress(void *thread_info){
     int qualityValueOffset_ = 33;
 
 
-    calq::CQFile cqFile("quality_values", calq::File::MODE_WRITE);
+    calq::CQFile cqFile("quality_values__", calq::File::MODE_WRITE);
     std::cout << samBlock->block_length << std::endl;
     cqFile.writeHeader(10000);
 
-    calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
     printf("start line compression\n"); 
     int cntr = 0;
-    
-    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, cqFile, qualEncoder, as1, context, prefix, info.fsinchr, &cntr)) {
+    std::vector<calq::SAMRecord> samRecords;
+    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, as1, context, prefix, info.fsinchr, &cntr, samRecords)) {
         ++lineCtr;
         if (lineCtr % 100000 == 0) {
           if (info.calqmode){
+            calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
+            for (auto const &samRecord : samRecords) {
+              qualEncoder.addMappedRecordToBlock(samRecord);
+            }
             qualEncoder.finishBlock();
             qualEncoder.writeBlock(&cqFile);
           }
           printf("[cbc] compressed %llu lines\n", lineCtr);
+          samRecords.clear();
         }
     }
     if (info.calqmode){
+      calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
+      for (auto const &samRecord : samRecords) {
+          qualEncoder.addMappedRecordToBlock(samRecord);
+      }
       qualEncoder.finishBlock();
       qualEncoder.writeBlock(&cqFile);
     }
+    printf("[cbc] compressed %llu lines\n", lineCtr);
+
+    samRecords.clear();
     printf("done compressing lines\n"); 
     // Check if we are in the last block
     compress_rname(as, samBlock->rnames->models, "\n");

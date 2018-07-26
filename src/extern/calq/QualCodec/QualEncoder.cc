@@ -63,7 +63,6 @@ QualEncoder::QualEncoder(const int &polyploidy,
     // Construct quantizers
     int quantizerSteps = QUANTIZER_STEPS_MIN;
     int quantizerIdx = QUANTIZER_IDX_MIN;
-    std::cout << "qual values " << qualityValueMin << qualityValueMax << std::endl;
     for (int i = 0; i < NR_QUANTIZERS; ++i) {
         Quantizer quantizer = UniformMinMaxQuantizer(qualityValueMin, qualityValueMax, quantizerSteps);
         quantizers_.insert(std::pair<int, Quantizer>(quantizerIdx, quantizer));
@@ -124,11 +123,8 @@ void QualEncoder::finishBlock(void) {
 
     // Process all remaining records from queue
     while (samRecordDeque_.empty() == false) {
-        CALQ_LOG("ENCODING..");
         encodeMappedQual(samRecordDeque_.front());
-        CALQ_LOG("ENCODED.");
         samRecordDeque_.pop_front();
-        CALQ_LOG("POPPED FRONT");
     }
 
 }
@@ -147,7 +143,7 @@ size_t QualEncoder::writeBlock(CQFile *cqFile) {
     // Write unmapped quality values
     unsigned char *uqv = (unsigned char *)unmappedQualityValues_.c_str();
     size_t uqvSize = unmappedQualityValues_.length();
-    std::cout << "\n" << uqvSize << "\n" << std::endl;
+    //std::cout << "\n" << uqvSize << "\n" << std::endl;
     if (uqvSize > 0) {
         compressedUnmappedQualSize_ += cqFile->writeUint8(0x01);
         compressedUnmappedQualSize_ += cqFile->writeQualBlock(uqv, uqvSize);
@@ -160,10 +156,11 @@ size_t QualEncoder::writeBlock(CQFile *cqFile) {
     for (auto const &mappedQuantizerIndex : mappedQuantizerIndices_) {
         mqiString += std::to_string(mappedQuantizerIndex);
     }
-    std::cout << "\n" << mqiString << "\n" << std::endl;
+    // std::cout << "\n" << mqiString << "\n" << std::endl;
 
     unsigned char *mqi = (unsigned char *)mqiString.c_str();
     size_t mqiSize = mqiString.length();
+    std::cout << "MQI Length: " << mqiSize << std::endl;
     if (mqiSize > 0) {
         compressedMappedQualSize_ += cqFile->writeUint8(0x01);
         compressedMappedQualSize_ += cqFile->writeQualBlock(mqi, mqiSize);
@@ -180,7 +177,9 @@ size_t QualEncoder::writeBlock(CQFile *cqFile) {
         }
         unsigned char *mqvi = (unsigned char *)mqviString.c_str();
         size_t mqviSize = mqviString.length();
-        std::cout << "\n" << mqviString << "\n" << std::endl;
+
+        std::cout << "MQVI Length: " << mqviSize << std::endl;
+        std::cout << mqviString << std::endl;
 
         if (mqviSize > 0) {
             compressedMappedQualSize_ += cqFile->writeUint8(0x01);
@@ -210,9 +209,6 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
     size_t qualIdx = 0;
     size_t quantizerIndicesIdx = samRecord.posMin - posOffset_;
 
-    samRecord.printLong();
-    std::cout << "quantizerIndicesIdx" << quantizerIndicesIdx << std::endl;
-
     for (cigarIdx = 0; cigarIdx < cigarLen; cigarIdx++) {
        if (isdigit(samRecord.cigar[cigarIdx])) {
            opLen = opLen*10 + (size_t)samRecord.cigar[cigarIdx] - (size_t)'0';
@@ -223,16 +219,13 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
        case '=':
        case 'X':
            // Encode opLen quality values with computed quantizer indices
-           CALQ_LOG("CASE X");
            for (size_t i = 0; i < opLen; i++) {
                int q = (int)samRecord.qual[qualIdx++] - qualityValueOffset_;
                int quantizerIndex = mappedQuantizerIndices_[quantizerIndicesIdx++];
                int qualityValueIndex = quantizers_.at(quantizerIndex).valueToIndex(q);
-                              //quantizers_.at(quantizerIndex).print();
 
                mappedQualityValueIndices_.at(quantizerIndex).push_back(qualityValueIndex);
            }
-           CALQ_LOG("CASE X HANDLED");
            break;
        case 'I':
        case 'S':
