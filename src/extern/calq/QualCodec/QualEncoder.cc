@@ -160,7 +160,7 @@ size_t QualEncoder::writeBlock(CQFile *cqFile) {
 
     unsigned char *mqi = (unsigned char *)mqiString.c_str();
     size_t mqiSize = mqiString.length();
-    std::cout << "MQI Length: " << mqiSize << std::endl;
+    // std::cout << "MQI Length: " << mqiSize << std::endl;
     if (mqiSize > 0) {
         compressedMappedQualSize_ += cqFile->writeUint8(0x01);
         compressedMappedQualSize_ += cqFile->writeQualBlock(mqi, mqiSize);
@@ -178,8 +178,8 @@ size_t QualEncoder::writeBlock(CQFile *cqFile) {
         unsigned char *mqvi = (unsigned char *)mqviString.c_str();
         size_t mqviSize = mqviString.length();
 
-        std::cout << "MQVI Length: " << mqviSize << std::endl;
-        std::cout << mqviString << std::endl;
+        // std::cout << "MQVI Length: " << mqviSize << std::endl;
+        // std::cout << mqviString << std::endl;
 
         if (mqviSize > 0) {
             compressedMappedQualSize_ += cqFile->writeUint8(0x01);

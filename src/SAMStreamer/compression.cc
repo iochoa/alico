@@ -162,20 +162,19 @@ static void build_SAMRecord_for_calq(sam_block samBlock, calq::SAMRecord * const
     }
 }
 
-static void extract_SAM_data_for_calq(sam_block samBlock, uint32_t * const pos, std::string * const cigar, std::string * const seq, std::string * qual, int cntr) {
+static void extract_SAM_data_for_calq(sam_block samBlock, uint32_t * const pos, std::string * const cigar, std::string * const seq, std::string * qual) {
     *pos = samBlock->reads->lines->pos;
     *cigar = samBlock->reads->lines->cigar;
     *seq = samBlock->reads->lines->read;
     for (int i = 0; i < samBlock->QVs->qv_lines->columns; i++) {
         *qual += (samBlock->QVs->qv_lines->data[i] + char(33));
     }
-    if (!(cntr % 2)) {
+    if (samBlock->reads->lines->invFlag & 16) {
         std::reverse(qual->begin(), qual->end());
     }
-
 }
 
-int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE * fsinchr, int * cntr, std::vector<calq::SAMRecord> &samRecords)  {
+int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE * fsinchr, std::vector<calq::SAMRecord> &samRecords)  {
     try {
          /*if (calq) {
             //Max33 Phred+33 [0,93]
@@ -268,10 +267,9 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
             std::string seq = "";
             std::string qual = "";
             //std::cout << "Counter: " << *cntr << std::endl;
-            *cntr = *cntr + 1;
             //std::cout << "Counter: " << *cntr << std::endl;
 
-            extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual, *cntr);
+            extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
             calq::SAMRecord samRecord(pos, cigar, seq, qual);
             samRecords.push_back(samRecord);
             //qualEncoder.addMappedRecordToBlock(samRecord);
@@ -358,8 +356,7 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness,
         std::string cigar = "";
         std::string seq = "";
         std::string qual = "";
-        int cntr = 0;
-        extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual, cntr);
+        extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
         calq::SAMRecord samRecord(pos, cigar, seq, qual);
         //build_SAMRecord_for_calq(samBlock, &samRecord);
         qualDecoder.decodeMappedRecordFromBlock(samRecord);
@@ -733,14 +730,13 @@ void* compress(void *thread_info){
     int qualityValueOffset_ = 33;
 
 
-    calq::CQFile cqFile("quality_values__", calq::File::MODE_WRITE);
+    calq::CQFile cqFile("quality_values_calq", calq::File::MODE_WRITE);
     std::cout << samBlock->block_length << std::endl;
     cqFile.writeHeader(10000);
 
     printf("start line compression\n"); 
-    int cntr = 0;
     std::vector<calq::SAMRecord> samRecords;
-    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, as1, context, prefix, info.fsinchr, &cntr, samRecords)) {
+    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, as1, context, prefix, info.fsinchr, samRecords)) {
         ++lineCtr;
         if (lineCtr % 100000 == 0) {
           if (info.calqmode){
