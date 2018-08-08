@@ -24,7 +24,7 @@ static char *UNMAPPED_READS = "unmapped_reads";
 static char *ZIPPED_READS = "unmapped_reads.gz";
 static char *REFEREN_COMP = "reference_comp";
 static char *REFEREN_NUM = "reference_num"; 
-static char *REFEREN_LOCAL = "reference_local";
+static char *REFEREN_LOCAL = "reference_local.fa";
 static char *QUAL_VALUES = "quality_values";
 
 /**
@@ -46,7 +46,11 @@ void usage(const char *name) {
     printf("\t-h\t\t: Print this help\n");
     printf("\t-q\t\t: CALQ Mode\n");
     //printf("\t-s\t\t: Print summary stats\n");
-    //printf("\t-t [lines]\t: Number of lines to use as training set (0 for all, 1000000 default)\n");
+    printf("\t-t [lines]\t: Number of lines to use as training set (0 for all, 1000000 default)\n");
+    printf("\t-p [num]\t: Set the polyploidy value for CALQ (default: 2)\n");
+    printf("\t-a [num]\t: Set the max quality value for CALQ (default: 41)\n");
+    printf("\t-i [num]\t: Set the min quality value for CALQ (default: 0)\n");
+    printf("\t-o [num]\t: Set the quality value offset for CALQ (default: 33)\n");
     //printf("\t-v\t\t: Enable verbose output\n");
 }
 
@@ -113,7 +117,10 @@ int main(int argc, const char * argv[]) {
     opts.ratio = 1;
     opts.uncompressed = 0;
     opts.distortion = DISTORTION_MSE;
-    
+    opts.polyploidy = 2;
+    opts.qualityValueMax = 41;
+    opts.qualityValueMin = 0;
+    opts.qualityValueOffset = 33;
     mode = COMPRESSION;
     
     // No dependency, cross-platform command line parsing means no getopt
@@ -231,6 +238,34 @@ int main(int argc, const char * argv[]) {
                 }
                 i += 2;
                 break;
+            case 'p':
+                opts.polyploidy = atoi(argv[i+1]);
+                lossiness = LOSSY;
+                opts.mode = MODE_RATIO;
+                calq = 1;                
+                i += 2;
+                break;
+            case 'a':
+                lossiness = LOSSY;
+                opts.mode = MODE_RATIO;
+                calq = 1;
+                opts.qualityValueMax = atoi(argv[i+1]);
+                i += 2;
+                break;
+            case 'i':
+                lossiness = LOSSY;
+                opts.mode = MODE_RATIO;
+                calq = 1;
+                opts.qualityValueMin = atoi(argv[i+1]);
+                i += 2;
+                break;
+            case 'o':
+                lossiness = LOSSY;
+                opts.mode = MODE_RATIO;
+                calq = 1;
+                opts.qualityValueOffset = atoi(argv[i+1]);
+                i += 2;
+                break;
             default:
                 printf("Unrecognized option -%c.\n", argv[i][1]);
                 usage(argv[0]);
@@ -238,7 +273,12 @@ int main(int argc, const char * argv[]) {
         }
     }
     
-    if (file_idx != 3) {
+    if (file_idx != 3 && mode == COMPRESSION) {
+        printf("Missing required filenames.\n");
+        usage(argv[0]);
+        exit(1);
+    }
+    if (file_idx != 2 && mode == DECOMPRESSION){
         printf("Missing required filenames.\n");
         usage(argv[0]);
         exit(1);

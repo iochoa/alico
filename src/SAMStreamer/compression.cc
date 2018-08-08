@@ -724,12 +724,6 @@ void* compress(void *thread_info){
     else
         compress_int(as, samBlock->codebook_model, LOSSLESS);
    
-    int polyploidy_ = 2;
-    int qualityValueMax_ = 41;
-    int qualityValueMin_ = 0;
-    int qualityValueOffset_ = 33;
-
-
     calq::CQFile cqFile("quality_values_calq", calq::File::MODE_WRITE);
     std::cout << samBlock->block_length << std::endl;
     cqFile.writeHeader(10000);
@@ -740,7 +734,7 @@ void* compress(void *thread_info){
         ++lineCtr;
         if (lineCtr % 100000 == 0) {
           if (info.calqmode){
-            calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
+            calq::QualEncoder qualEncoder(opts.polyploidy, opts.qualityValueMax, opts.qualityValueMin, opts.qualityValueOffset);
             for (auto const &samRecord : samRecords) {
               qualEncoder.addMappedRecordToBlock(samRecord);
             }
@@ -752,7 +746,7 @@ void* compress(void *thread_info){
         }
     }
     if (info.calqmode){
-      calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
+      calq::QualEncoder qualEncoder(opts.polyploidy, opts.qualityValueMax, opts.qualityValueMin, opts.qualityValueOffset);
       for (auto const &samRecord : samRecords) {
           qualEncoder.addMappedRecordToBlock(samRecord);
       }
@@ -783,6 +777,9 @@ void* compress(void *thread_info){
     free(as);
     free_sam_block_compress(samBlock);
     //pthread_exit(NULL);
+
+    if (!info.calqmode)
+        remove("quality_values_calq");
 
     return NULL;
 }
