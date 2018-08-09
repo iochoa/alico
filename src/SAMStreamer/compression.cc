@@ -174,7 +174,7 @@ static void extract_SAM_data_for_calq(sam_block samBlock, uint32_t * const pos, 
     }
 }
 
-int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE * fsinchr, std::vector<calq::SAMRecord> &samRecords)  {
+int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, int compress_ref, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE * fsinchr, std::vector<calq::SAMRecord> &samRecords)  {
     try {
          /*if (calq) {
             //Max33 Phred+33 [0,93]
@@ -237,7 +237,12 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
     
         if (chr_change == 1){
             // Store Ref sequence in memory
-            store_reference_in_memory_com(samBlock->fref, as1, context, prefix, fsinchr);
+            if (compress_ref){
+                store_reference_in_memory_com(samBlock->fref, as1, context, prefix, fsinchr);
+            } else {
+                store_reference_in_memory(samBlock->fref);
+            }
+
             // Reset cumsumP
             cumsumP = 0;
             memset(snpInRef, 0, MAX_BP_CHR);
@@ -351,17 +356,15 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness,
     decompress_aux_idoia(as, samBlock->aux, sline.aux);
     //idoia
     if (calqmode) {
-        //fprintf(stdout, "line compression w/ calq\n");
-        uint32_t pos = 0;
-        std::string cigar = "";
-        std::string seq = "";
+        fprintf(stdout, "line compression w/ calq\n");
+        uint32_t pos = sline.pos;
+        std::string cigar = sline.cigar;
+        std::string seq = sline.read;
         std::string qual = "";
-        extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
         calq::SAMRecord samRecord(pos, cigar, seq, qual);
         //build_SAMRecord_for_calq(samBlock, &samRecord);
         qualDecoder.decodeMappedRecordFromBlock(samRecord);
     } else {
-   
         if (lossiness == LOSSY) {
             QVs_decompress(as, samBlock->QVs, decompression_flag, sline.quals);
         }
@@ -707,8 +710,10 @@ void* compress(void *thread_info){
     char buffer[1024];
     // Allocs the Arithmetic and the I/O stream
     Arithmetic_stream as = alloc_arithmetic_stream(info.mode, info.fcomp);
-    Arithmetic_stream as1 = alloc_arithmetic_stream(info.mode, info.frefcom);    
-
+    Arithmetic_stream as1;
+    if (info.compress_ref){
+        as1 = alloc_arithmetic_stream(info.mode, info.frefcom);    
+    }
     // Allocs the different blocks and all the models for the Arithmetic
     sam_block samBlock = alloc_sam_models(as, info.fsam, info.fref, &opts, info.mode);
     
@@ -730,7 +735,7 @@ void* compress(void *thread_info){
 
     printf("start line compression\n"); 
     std::vector<calq::SAMRecord> samRecords;
-    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, as1, context, prefix, info.fsinchr, samRecords)) {
+    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, info.compress_ref, as1, context, prefix, info.fsinchr, samRecords)) {
         ++lineCtr;
         if (lineCtr % 100000 == 0) {
           if (info.calqmode){
@@ -762,17 +767,21 @@ void* compress(void *thread_info){
   
     //end the compression
     compress_file_size = encoder_last_step(as);
-    compress_file_size1 = encoder_last_step(as1);    
- 
-    printf("Final Size: %lu\n", compress_file_size);
-    printf("Final Size (Compressed Reference File): %lu\n", compress_file_size1);
+    if (info.compress_ref){
+        compress_file_size1 = encoder_last_step(as1);    
+    }
 
+    printf("Final Size: %lu\n", compress_file_size);
+    if (info.compress_ref){
+        printf("Final Size (Compressed Reference File): %lu\n", compress_file_size1);
+    }
     ticks = clock() - begin;
     
     printf("Compression (mapped reads only) took %f\n", ((float)ticks)/CLOCKS_PER_SEC);
-
-    free_os_stream(as1->ios);
-    free(as1);
+    if (info.compress_ref){
+        free_os_stream(as1->ios);
+        free(as1);
+    }
     free_os_stream(as->ios);
     free(as);
     free_sam_block_compress(samBlock);
@@ -780,6 +789,10 @@ void* compress(void *thread_info){
 
     if (!info.calqmode)
         remove("quality_values_calq");
+    if (!info.compress_ref){
+        remove("reference_comp");
+        remove("reference_num");
+    }
 
     return NULL;
 }
@@ -810,9 +823,14 @@ void* decompress(void *thread_info){
     // Decompress the blocks
     while(decompress_line(as, samBlock, info->lossiness, info->calqmode, qualDecoder)){
         n++;
+        if (n % 100000 == 0){
+            printf("decompressed %u lines\n", n);
+        }
     }
     
     n += samBlock->block_length;
+    free_os_stream(as->ios);
+    free(as);
     free_sam_block_compress(samBlock);
     ticks = clock() - begin;
     printf("Decompression (mapped reads only) took %f\n", ((float)ticks)/CLOCKS_PER_SEC);

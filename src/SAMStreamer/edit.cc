@@ -89,7 +89,7 @@ static uint32_t edit_dist_helper(char *str1, char *str2, uint32_t s1, uint32_t s
 static uint32_t asymmetric_edit_dist_helper(char *str1, char *str2, uint32_t s1, uint32_t s2) {
   uint32_t sub = 1;
   uint32_t del = 1;
-  uint32_t ins = 1;
+  uint32_t inss = 1;
   for (uint32_t i = 0; i <= s1; i++) {
     matrix_edits[i][0] = i;
   }
@@ -104,7 +104,7 @@ static uint32_t asymmetric_edit_dist_helper(char *str1, char *str2, uint32_t s1,
       if (str1[i-1] == str2[j-1]) {
         matrix_edits[i][j] = matrix_edits[i-1][j-1];
       } else {
-        matrix_edits[i][j] = min(matrix_edits[i-1][j-1] + sub, min(matrix_edits[i-1][j] + ins, matrix_edits[i][j-1] + del));
+        matrix_edits[i][j] = min(matrix_edits[i-1][j-1] + sub, min(matrix_edits[i-1][j] + inss, matrix_edits[i][j-1] + del));
       }
       if (i == s1 && matrix_edits[i][j] < min_value) {
         min_value = matrix_edits[i][j];
@@ -242,14 +242,14 @@ uint32_t edit_sequence(char *str1, char *str2, uint32_t s1, uint32_t s2, struct 
   seq.n_dels = n_dels_tmp;
   seq.n_ins = n_ins_tmp;
   seq.n_snps = n_snps_tmp;
-  for (uint32_t i = 0; i < n_dels_tmp; i++) {
-    seq.Dels[i] = Dels_tmp[n_dels_tmp - i - 1];  
+  for (uint32_t k = 0; k < n_dels_tmp; k++) {
+    seq.Dels[k] = Dels_tmp[n_dels_tmp - k - 1];  
   }
-  for (uint32_t i = 0; i < n_ins_tmp; i++) {
-    seq.Insers[i] = Insers_tmp[n_ins_tmp - i - 1];  
+  for (uint32_t k = 0; k < n_ins_tmp; k++) {
+    seq.Insers[k] = Insers_tmp[n_ins_tmp - k - 1];  
   }
-  for (uint32_t i = 0; i < n_snps_tmp; i++) {
-    seq.SNPs[i] = SNPs_tmp[n_snps_tmp - i - 1];  
+  for (uint32_t k = 0; k < n_snps_tmp; k++) {
+    seq.SNPs[k] = SNPs_tmp[n_snps_tmp - k - 1];  
   }
   if (DEBUG || STATS) {
     printf("%d %d %d\n", n_snps_tmp, n_dels_tmp, n_ins_tmp);

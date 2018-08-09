@@ -284,7 +284,7 @@ uint32_t compress_edits(Arithmetic_stream as, read_models rs, char *edits, char 
     
     // Check if read matches reference
     bool matches = true;
-    for (uint32_t i = 0; i < rs->read_length; i++) {
+    for (i = 0; i < rs->read_length; i++) {
       if (read[i] != reference[P-1 + i]) {
         matches = false;
         break;

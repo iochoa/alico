@@ -18,14 +18,14 @@
 
 #include <pthread.h>
 
-static char *MAPPED_READS = "mapped_reads";
-static char *HEADERS = "headers";
-static char *UNMAPPED_READS = "unmapped_reads";
-static char *ZIPPED_READS = "unmapped_reads.gz";
-static char *REFEREN_COMP = "reference_comp";
-static char *REFEREN_NUM = "reference_num"; 
-static char *REFEREN_LOCAL = "reference_local.fa";
-static char *QUAL_VALUES = "quality_values";
+static const char *MAPPED_READS = "mapped_reads";
+static const char *HEADERS = "headers";
+static const char *UNMAPPED_READS = "unmapped_reads";
+static const char *ZIPPED_READS = "unmapped_reads.gz";
+static const char *REFEREN_COMP = "reference_comp";
+static const char *REFEREN_NUM = "reference_num"; 
+static const char *REFEREN_LOCAL = "reference_local.fa";
+static const char *QUAL_VALUES = "quality_values";
 
 /**
  * Displays a usage name
@@ -43,15 +43,17 @@ void usage(const char *name) {
     printf("\t-D [M|L|A]\t: Optimize for MSE, Log(1+L1), L1 distortions, respectively (default: MSE)\n");
     //printf("\t-c [#]\t\t: Compress using [#] clusters (default: 3)\n");
     //printf("\t-u [FILE]\t: Write the uncompressed lossy values to FILE (default: off)\n");
-    printf("\t-h\t\t: Print this help\n");
     printf("\t-q\t\t: CALQ Mode\n");
     //printf("\t-s\t\t: Print summary stats\n");
-    printf("\t-t [lines]\t: Number of lines to use as training set (0 for all, 1000000 default)\n");
+    //printf("\t-t [lines]\t: Number of lines to use as training set (0 for all, 1000000 default)\n");
     printf("\t-p [num]\t: Set the polyploidy value for CALQ (default: 2)\n");
     printf("\t-a [num]\t: Set the max quality value for CALQ (default: 41)\n");
     printf("\t-i [num]\t: Set the min quality value for CALQ (default: 0)\n");
     printf("\t-o [num]\t: Set the quality value offset for CALQ (default: 33)\n");
     //printf("\t-v\t\t: Enable verbose output\n");
+    printf("\t-e\t\t: Compress reference file along with SAM file\n");
+    printf("\t-m\t\t: Decompress reference file along with SAM file\n");
+    printf("\t-h\t\t: Print this help\n");
 }
 
 
@@ -88,8 +90,9 @@ int main(int argc, const char * argv[]) {
 
     int calq = 0;
 
-    uint32_t mode, i = 0, file_idx = 0, rc = 0, lossiness = LOSSLESS;
-    
+    uint32_t mode, file_idx = 0, rc = 0, lossiness = LOSSLESS;
+    int i = 0;    
+
     struct qv_options_t opts;
     
     char input_name[1024], output_name[1024], ref_name[1024];
@@ -123,6 +126,8 @@ int main(int argc, const char * argv[]) {
     opts.qualityValueOffset = 33;
     mode = COMPRESSION;
     
+    comp_info.compress_ref = 0;
+    comp_info.decompress_ref = 0;
     // No dependency, cross-platform command line parsing means no getopt
     // So we need to settle for less than optimal flexibility (no combining short opts, maybe that will be added later)
     
@@ -266,6 +271,16 @@ int main(int argc, const char * argv[]) {
                 opts.qualityValueOffset = atoi(argv[i+1]);
                 i += 2;
                 break;
+            case 'e':
+                mode = COMPRESSION;
+                comp_info.compress_ref = 1;
+                i += 1;
+                break;
+            case 'm':
+                mode = DECOMPRESSION;
+                comp_info.decompress_ref = 1;
+                i += 1;
+                break;
             default:
                 printf("Unrecognized option -%c.\n", argv[i][1]);
                 usage(argv[0]);
@@ -278,7 +293,7 @@ int main(int argc, const char * argv[]) {
         usage(argv[0]);
         exit(1);
     }
-    if (file_idx != 2 && mode == DECOMPRESSION){
+    if (file_idx != 2 && mode == DECOMPRESSION && comp_info.decompress_ref == 1){
         printf("Missing required filenames.\n");
         usage(argv[0]);
         exit(1);
@@ -363,9 +378,9 @@ int main(int argc, const char * argv[]) {
             pid_t pid = fork();
             if (pid == 0) {
                 char* argv[4];
-                argv[0] = "gzip";
-                argv[1] = "-f";
-                argv[2] = UNMAPPED_READS;
+                strcpy(argv[0], "gzip");
+                strcpy(argv[1], "-f");
+                strcpy(argv[2], UNMAPPED_READS);
                 argv[3] = NULL;
                 execvp(argv[0], argv);
                 exit(1);
@@ -381,28 +396,33 @@ int main(int argc, const char * argv[]) {
             break;
                           }
         case DECOMPRESSION: {
-
             comp_info.fsam = fopen(output_name, "w");
-            change_dir(input_name);
-            comp_info.fref = fopen( REFEREN_LOCAL , "w" );
-            comp_info.frefcom = fopen(REFEREN_COMP, "r");
-            comp_info.fsinchr = fopen(REFEREN_NUM, "r");
-            
-            if ( comp_info.fref == NULL || comp_info.fsam == NULL || comp_info.frefcom == NULL || comp_info.fsinchr == NULL ){
+            if (comp_info.decompress_ref) {
+                change_dir(input_name);
+                comp_info.fref = fopen(REFEREN_LOCAL, "w+");
+                comp_info.frefcom = fopen(REFEREN_COMP, "r");
+                comp_info.fsinchr = fopen(REFEREN_NUM, "r");
+            } else {
+                comp_info.fref = fopen(ref_name, "r");
+                change_dir(input_name);
+            }
+
+            if ( comp_info.fref == NULL || comp_info.fsam == NULL ){
                 fputs ("File error while opening ref and sam files\n",stderr); exit (1);
             }
-            reconstruct_ref((void *)&comp_info);
-            fclose(comp_info.fref);
-            comp_info.fref = fopen(REFEREN_LOCAL, "r");
-            fclose(comp_info.frefcom);
-            fclose(comp_info.fsinchr);
+            if (comp_info.decompress_ref) {
+                reconstruct_ref((void *)&comp_info);
+                fseek(comp_info.fref, 0, SEEK_SET);
+                fclose(comp_info.frefcom);
+                fclose(comp_info.fsinchr);
+            }
 
             pid_t pid = fork();
             if (pid == 0) {
                 char* argv[4];
-                argv[0] = "gzip";
-                argv[1] = "-df";
-                argv[2] = ZIPPED_READS;
+                strcpy(argv[0], "gzip");
+                strcpy(argv[1], "-df");
+                strcpy(argv[2], ZIPPED_READS);
                 argv[3] = NULL;
                 execvp(argv[0], argv);
                 exit(1);

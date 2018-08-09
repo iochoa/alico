@@ -135,7 +135,7 @@ int store_reference_in_memory_com(FILE* refFile, Arithmetic_stream as1, uint64_t
             curr_idx = context_index(reference[letterCount]);
 
             previous = 0;
-            for(int i=0; i<curr_idx; i++) {previous+=context[context_idx][i];}
+            for(int j=0; j<curr_idx; j++) {previous+=context[context_idx][j];}
             
             arithmetic_encoder_step(as1, ((uint32_t)previous), ((uint32_t)(previous+context[context_idx][curr_idx])), ((uint32_t)context[context_idx][5]));
             context[context_idx][curr_idx]++; context[context_idx][5]++;
