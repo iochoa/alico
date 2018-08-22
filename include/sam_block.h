@@ -33,6 +33,9 @@
 #include "quantizer.h"
 #include "aux_data.h"
 
+// Calq File
+
+#include "IO/CQ/CQFile.h"
 
 
 #define MAX_READ_LENGTH 1024
@@ -80,6 +83,7 @@ struct compressor_info_t{
     FILE *frefcom; //hongyi
     FILE *fsinchr; //hongyi
     FILE *fqual;
+    char cq_name[1024];
     uint8_t mode;
     struct qv_options_t *qv_opts;
     uint8_t lossiness;

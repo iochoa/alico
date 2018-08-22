@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-// #include "IO/CQ/CQFile.h"
+#include "IO/CQ/CQFile.h"
 #include "IO/SAM/SAMRecord.h"
 #include "QualCodec/Quantizers/Quantizer.h"
 
@@ -22,9 +22,9 @@ class QualDecoder {
     QualDecoder(void);
     ~QualDecoder(void);
 
-    void decodeMappedRecordFromBlock(const SAMRecord &samRecord/*, File *qualFile*/);
-    void decodeUnmappedRecordFromBlock(const SAMRecord &samRecord/*, File *qualFile*/);
-    // size_t readBlock(CQFile *cqFile);
+    void decodeMappedRecordFromBlock(const SAMRecord &samRecord, File *qualFile);
+    void decodeUnmappedRecordFromBlock(const SAMRecord &samRecord, File *qualFile);
+    size_t readBlock(CQFile *cqFile);
 
  private:
     uint32_t posOffset_;

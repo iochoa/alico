@@ -26,6 +26,7 @@ static const char *REFEREN_COMP = "reference_comp";
 static const char *REFEREN_NUM = "reference_num"; 
 static const char *REFEREN_LOCAL = "reference_local.fa";
 static const char *QUAL_VALUES = "quality_values";
+static const char *CALQ_QV = "quality_values_calq";
 
 /**
  * Displays a usage name
@@ -44,6 +45,7 @@ void usage(const char *name) {
     //printf("\t-c [#]\t\t: Compress using [#] clusters (default: 3)\n");
     //printf("\t-u [FILE]\t: Write the uncompressed lossy values to FILE (default: off)\n");
     printf("\t-q\t\t: CALQ Mode\n");
+    printf("\t-z\t\t: CALQ Decompress Mode\n");
     //printf("\t-s\t\t: Print summary stats\n");
     //printf("\t-t [lines]\t: Number of lines to use as training set (0 for all, 1000000 default)\n");
     printf("\t-p [num]\t: Set the polyploidy value for CALQ (default: 2)\n");
@@ -172,7 +174,7 @@ int main(int argc, const char * argv[]) {
                 break;
             // COMPRESSION WITH CALQ
             case 'q':
-                //mode = COMPRESSION;
+                mode = COMPRESSION;
                 lossiness = LOSSY;
                 opts.mode = MODE_RATIO;
                 calq = 1;
@@ -193,6 +195,12 @@ int main(int argc, const char * argv[]) {
             case 'x':
                 mode = DECOMPRESSION;
                 i += 1;
+                break;
+            // DECOMPRESSION WITH CALQ
+            case 'z':
+                mode = DECOMPRESSION;
+                calq = 1;
+                i +=1;
                 break;
             // REMOTE_DECOMPRESSION
             case 'r':
@@ -345,7 +353,7 @@ int main(int argc, const char * argv[]) {
     switch (mode) {
         case COMPRESSION: {
             comp_info.fsam = fopen( input_name, "r");
-	    comp_info.fref = fopen( ref_name, "r"); //charlie
+	        comp_info.fref = fopen( ref_name, "r"); //charlie
             if (calq) {
                 if ( comp_info.fsam == NULL ) {
                     fputs ("File error while opening sam file\n", stderr); exit (1);
@@ -396,6 +404,7 @@ int main(int argc, const char * argv[]) {
             break;
                           }
         case DECOMPRESSION: {
+            printf("%s %s\n", output_name, ref_name);
             comp_info.fsam = fopen(output_name, "w");
             if (comp_info.decompress_ref) {
                 change_dir(input_name);
@@ -406,15 +415,24 @@ int main(int argc, const char * argv[]) {
                 comp_info.fref = fopen(ref_name, "r");
                 change_dir(input_name);
             }
+            // CALQ IMPLEMENTATION
+            if (calq) {
+                strcpy(comp_info.cq_name, CALQ_QV);
+            }
 
             if ( comp_info.fref == NULL || comp_info.fsam == NULL ){
-                fputs ("File error while opening ref and sam files\n",stderr); exit (1);
+                perror(output_name);
+                fputs ("File error while opening ref and sam files\n",stderr);
+                exit (1);
             }
             if (comp_info.decompress_ref) {
+                printf("hi");
                 reconstruct_ref((void *)&comp_info);
                 fseek(comp_info.fref, 0, SEEK_SET);
                 fclose(comp_info.frefcom);
                 fclose(comp_info.fsinchr);
+                                printf("hi");
+
             }
 
             pid_t pid = fork();

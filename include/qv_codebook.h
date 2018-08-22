@@ -31,9 +31,9 @@
 struct qv_options_t {
 	uint8_t verbose;
 	int polyploidy;
-        int qualityValueMax;
-        int qualityValueMin;
-        int qualityValueOffset;
+    int qualityValueMax;
+    int qualityValueMin;
+    int qualityValueOffset;
 	uint8_t stats;
 	uint8_t mode;
     uint8_t uncompressed;

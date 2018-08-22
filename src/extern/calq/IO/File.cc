@@ -7,7 +7,7 @@
 #include "IO/File.h"
 
 #include <limits.h>
-
+#include <errno.h>
 #include "Common/Exceptions.h"
 #include "Common/os.h"
 
@@ -40,10 +40,12 @@ File::~File(void) {
 }
 
 void File::open(const std::string &path, const Mode mode) {
+
     if (path.empty() == true) {
         throwErrorException("path is empty");
     }
     if (fp_ != NULL) {
+
         throwErrorException("File pointer already in use");
     }
 
@@ -55,8 +57,11 @@ void File::open(const std::string &path, const Mode mode) {
         m = "wb";
         mode_ = mode;
     } else {
+
         throwErrorException("Unkown mode");
     }
+
+    printf("%s", path.c_str());
 
 #ifdef CQ_OS_WINDOWS
     int err = fopen_s(&fp_, path.c_str(), m);
@@ -64,8 +69,10 @@ void File::open(const std::string &path, const Mode mode) {
         throwErrorException("Failed to open file");
     }
 #else
+    errno = 0;
     fp_ = fopen(path.c_str(), m);
     if (fp_ == NULL) {
+        printf("Failed to open file (Relative path to given folder is needed)");
         throwErrorException("Failed to open file");
     }
 #endif

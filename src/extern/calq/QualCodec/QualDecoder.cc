@@ -64,7 +64,7 @@ QualDecoder::QualDecoder(void)
 
 QualDecoder::~QualDecoder(void) {}
 
-void QualDecoder::decodeMappedRecordFromBlock(const SAMRecord &samRecord/*, File *qualFile*/) {
+void QualDecoder::decodeMappedRecordFromBlock(const SAMRecord &samRecord, File *qualFile) {
     std::string qual("");
 
     size_t cigarIdx = 0;
@@ -111,12 +111,12 @@ void QualDecoder::decodeMappedRecordFromBlock(const SAMRecord &samRecord/*, File
        }
        opLen = 0;
     }
-
-    // qualFile->write((unsigned char *)qual.c_str(), qual.length());
-    // qualFile->writeByte('\n');
+    printf("qual: %s\n", qual.c_str());
+    qualFile->write((unsigned char *)qual.c_str(), qual.length());
+    qualFile->writeByte('\n');
 }
 
-void QualDecoder::decodeUnmappedRecordFromBlock(const SAMRecord &samRecord/*, File *qualFile*/) {
+void QualDecoder::decodeUnmappedRecordFromBlock(const SAMRecord &samRecord, File *qualFile) {
     // Get the read length from SEQ (CIGAR might be unavailable for an
     // unmapped record)
     size_t qualLen = samRecord.seq.length();
@@ -132,7 +132,7 @@ void QualDecoder::decodeUnmappedRecordFromBlock(const SAMRecord &samRecord/*, Fi
     // qualFile->write((unsigned char *)qual.c_str(), qual.length());
     // qualFile->writeByte('\n');
 }
-/*
+
 size_t QualDecoder::readBlock(CQFile *cqFile) {
     size_t ret = 0;
 
@@ -170,6 +170,6 @@ size_t QualDecoder::readBlock(CQFile *cqFile) {
 
     return ret;
 }
-*/
+
 }  // namespace calq
 
