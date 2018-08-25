@@ -173,9 +173,11 @@ static void extract_SAM_data_for_calq(sam_block samBlock, uint32_t * const pos, 
     if (samBlock->reads->lines->invFlag & 16) {
         std::reverse(qual->begin(), qual->end());
     }
-    printf("%s\n", qual->c_str());
-    printf("%s\n", cigar->c_str());
+    printf("qual: %s\n", qual->c_str());
+    printf("cigar: %s\n", cigar->c_str());
 }
+
+
 
 int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE * fsinchr, std::vector<calq::SAMRecord> &samRecords)  {
     try {
@@ -354,10 +356,10 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness,
     if (calqmode) {
         //fprintf(stdout, "line compression w/ calq\n");
         uint32_t pos = 0;
-        std::string cigar = "";
+        std::string cigar = sline.cigar;
         std::string seq = "";
         std::string qual = "";
-        extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
+        //extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
         calq::SAMRecord samRecord(pos, cigar, seq, qual);
         samRecords.push_back(samRecord);
         //build_SAMRecord_for_calq(samBlock, &samRecord);
@@ -830,7 +832,7 @@ void* decompress(void *thread_info){
     std::vector<calq::SAMRecord> samRecords;
     while(decompress_line(as, samBlock, info->lossiness, info->calqmode, samRecords)){
         n++;
-
+        std::cout << n << " / " << blockSize << std::endl;
         if (n % blockSize == 0 && info->calqmode) {
             calq::QualDecoder qualDecoder;
             qualDecoder.readBlock(&fcq_);
@@ -841,7 +843,7 @@ void* decompress(void *thread_info){
     }
     if (info->calqmode) {
         calq::QualDecoder qualDecoder;
-       qualDecoder.readBlock(&fcq_);
+        qualDecoder.readBlock(&fcq_);
 
         printf("decoding..:");
         for (auto const &samRecord : samRecords) {
