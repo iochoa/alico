@@ -71,20 +71,20 @@ void QualDecoder::decodeMappedRecordFromBlock(const SAMRecord &samRecord, File *
     size_t cigarLen = samRecord.cigar.length();
     size_t opLen = 0;
     size_t qvciPos = samRecord.posMin - posOffset_;
-
+    
     for (cigarIdx = 0; cigarIdx < cigarLen; cigarIdx++) {
        if (isdigit(samRecord.cigar[cigarIdx])) {
            opLen = opLen*10 + (size_t)samRecord.cigar[cigarIdx] - (size_t)'0';
            continue;
        }
-
        switch (samRecord.cigar[cigarIdx]) {
        case 'M':
        case '=':
        case 'X':
            // Decode opLen quality value indices with computed quantizer indices
+
            for (size_t i = 0; i < opLen; i++) {
-               int quantizerIndex = qvci_[qvciPos++] - '0';
+              int quantizerIndex = qvci_[qvciPos++] - '0';
                int qualityValueIndex = qvi_.at(quantizerIndex)[qviIdx_[quantizerIndex]++] - '0';
                int q = quantizers_.at(quantizerIndex).indexToReconstructionValue(qualityValueIndex);
                qual += q + qualityValueOffset_;
@@ -114,6 +114,7 @@ void QualDecoder::decodeMappedRecordFromBlock(const SAMRecord &samRecord, File *
     printf("qual: %s\n", qual.c_str());
     qualFile->write((unsigned char *)qual.c_str(), qual.length());
     qualFile->writeByte('\n');
+    
 }
 
 void QualDecoder::decodeUnmappedRecordFromBlock(const SAMRecord &samRecord, File *qualFile) {

@@ -189,8 +189,6 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
         static bool unmapped_reads = false;
         uint8_t chr_change;
         // Load the data from the file
-            printf("hi");
-
         if(load_sam_line(samBlock)){
 
             return 0;
@@ -355,11 +353,12 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness,
     //idoia
     if (calqmode) {
         //fprintf(stdout, "line compression w/ calq\n");
-        uint32_t pos = 0;
+        uint32_t pos = sline.pos;
+        printf("%s\n", sline.cigar);
         std::string cigar = sline.cigar;
         std::string seq = "";
         std::string qual = "";
-        //extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
+        // extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
         calq::SAMRecord samRecord(pos, cigar, seq, qual);
         samRecords.push_back(samRecord);
         //build_SAMRecord_for_calq(samBlock, &samRecord);
@@ -739,6 +738,7 @@ void* compress(void *thread_info){
 
     printf("start line compression\n"); 
     std::vector<calq::SAMRecord> samRecords;
+    
     while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, as1, context, prefix, info.fsinchr, samRecords)) {
         ++lineCtr;
         if (lineCtr % 10000 == 0) {
@@ -760,7 +760,7 @@ void* compress(void *thread_info){
           printf("[cbc] compressed %llu lines\n", lineCtr);
           samRecords.clear();
         }
-    }
+    }   
     if (info.calqmode){
       calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
       for (auto const &samRecord : samRecords) {
@@ -839,7 +839,10 @@ void* decompress(void *thread_info){
             for (auto const &samRecord : samRecords) {
                 qualDecoder.decodeMappedRecordFromBlock(samRecord, &qualFile_);
             }
+            samRecords.clear();
+            n = 0;
         }
+
     }
     if (info->calqmode) {
         calq::QualDecoder qualDecoder;
