@@ -979,7 +979,7 @@ int compress_aux_idoia(Arithmetic_stream as, aux_models models, char **aux_str, 
             compress_uint8t(as, models->descBytes_wContext[prev_numericTagType], first_byte);
             compress_uint8t(as, models->descBytes_wContext[(MAXLUT + 2) + prev_numericTagType], second_byte);
             
-            uint8_t buff_cnt = 0;
+            uint32_t buff_cnt = 0;
             while (buff_cnt < UINT16_MAX && *ptr_data!=0) {
                 compress_uint8t(as, models->iidBytes_wContext[prev_numericTagType], *ptr_data);
                 ptr_data++;
@@ -1026,7 +1026,7 @@ int decompress_aux_idoia(Arithmetic_stream as, aux_block aux, char* finalLine)
     uint8_t it, most_common_flag, most_common_token;
     uint8_t tagtypeLUTflag, typeLUTflag, tagtypeLUTindex, mappedChar1, mappedChar2, prev_tagtypeLUTindex;
     char tagChar1, tagChar2, typeChar;
-    uint8_t desc_length;
+    uint32_t desc_length;
     char auxFieldString[MAX_AUX_LENGTH] = {0};
     
     uint8_t rawType;
