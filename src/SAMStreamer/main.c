@@ -386,11 +386,15 @@ int main(int argc, const char * argv[]) {
             pid_t pid = fork();
             if (pid == 0) {
                 char* argv[4];
+                argv[0] = (char*)malloc(15*sizeof(char));
+                argv[1] = (char*)malloc(15*sizeof(char));
+                argv[2] = (char*)malloc(15*sizeof(char));
                 strcpy(argv[0], "gzip");
                 strcpy(argv[1], "-f");
                 strcpy(argv[2], UNMAPPED_READS);
                 argv[3] = NULL;
                 execvp(argv[0], argv);
+                free(argv[0]);free(argv[1]);free(argv[2]);
                 exit(1);
             }
             waitpid(pid, NULL, 0);
