@@ -218,7 +218,7 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
                     fputc(qline.data[j] + 33, funmapped);
                 }
             } else {
-                for (j = 0; j < qline.columns; i++) {
+                for (j = 0; j < qline.columns; j++) {
                     fputc(qline.data[j] + 33, funmapped);
                 }
             }
