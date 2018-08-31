@@ -408,7 +408,6 @@ int main(int argc, const char * argv[]) {
             break;
                           }
         case DECOMPRESSION: {
-            printf("%s %s\n", output_name, ref_name);
             comp_info.fsam = fopen(output_name, "w");
             if (comp_info.decompress_ref) {
                 change_dir(input_name);
@@ -442,11 +441,15 @@ int main(int argc, const char * argv[]) {
             pid_t pid = fork();
             if (pid == 0) {
                 char* argv[4];
+                argv[0] = (char*)malloc(18*sizeof(char));
+                argv[1] = (char*)malloc(18*sizeof(char));
+                argv[2] = (char*)malloc(18*sizeof(char));
                 strcpy(argv[0], "gzip");
                 strcpy(argv[1], "-df");
                 strcpy(argv[2], ZIPPED_READS);
                 argv[3] = NULL;
                 execvp(argv[0], argv);
+                free(argv[0]);free(argv[1]);free(argv[2]);
                 exit(1);
             }
 
