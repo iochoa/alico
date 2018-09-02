@@ -428,7 +428,7 @@ uint32_t compute_num_digits(uint32_t x){
 void absolute_to_relative(uint32_t *Dels, uint32_t numDels, ins *Insers, uint32_t numIns) {
     // convert to relative
     uint32_t prev_pos = 0;
-    uint32_t i;
+    uint32_t i=0;
     if (numDels > 0) {
         prev_pos = Dels[i];
     }
