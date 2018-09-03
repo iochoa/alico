@@ -201,10 +201,10 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
             fprintf(funmapped, "%d\t", *samBlock->tlen->tlen);
             fprintf(funmapped, "%s\t", line->read);
             int32_t i = 0;
-            uint32_t j = 0;
+            int32_t j = 0;
             qv_line_t qline = *samBlock->QVs->qv_lines;
             if ((line->invFlag & 16) == 16) {
-                for (j = qline.columns; j > 0; j--) {
+                for (j = qline.columns-1; j >= 0; j--) {
                     fputc(qline.data[j] + 33, funmapped);
                 }
             } else {
@@ -824,7 +824,7 @@ void* decompress(void *thread_info){
             printf("decompressed %llu lines\n", n);
         }
     }
-
+    printf("decompressed %llu lines\n", n);
     n += samBlock->block_length;
     free_os_stream(as->ios);
     free(as);
