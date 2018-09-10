@@ -419,9 +419,9 @@ int main(int argc, const char * argv[]) {
                 change_dir(input_name);
             }
             // CALQ IMPLEMENTATION
-            if (calq) {
+            //if (calq) {
                 strcpy(comp_info.cq_name, CALQ_QV);
-            }
+            //}
 
             if ( comp_info.fref == NULL || comp_info.fsam == NULL ){
                 perror(output_name);
