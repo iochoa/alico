@@ -58,7 +58,10 @@ OPTIONS
 CALQ OPTIONS
 
     -q, CALQ compression
-        Compress the quality values with CALQ. This creates an additional file in the output directory "quality_values_calq" which contains the compressed quality values. To decompress, run "./SAMStreamer -x -q <SAM file name> <output directory> <reference file name>".
+        Compress the quality values with CALQ. This creates an additional file in the output directory "quality_values_calq" which contains the compressed quality values.
+
+    -z, CALQ Decompression
+        Decompress the quality values with CALQ. Usage: "./SAMStreamer -z <input Directory> <output file name> <reference file name>".
 
     -p, polyploidy
         Set the polyploidy value for CALQ (2 by default).

@@ -305,7 +305,8 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness,
     uint32_t decompression_flag = 0;
 
     struct sam_line_t sline;
-    memset(sline.rname,0,1024); 
+    memset(sline.rname,0,1024);
+    memset(sline.quals,0,1024); 
     //This is only for fixed length? i think so.
     sline.readLength = samBlock->read_length;
     //sline.readLength = samBlock->reads->models->read_length;
@@ -354,7 +355,7 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness,
     if (calqmode) {
         //fprintf(stdout, "line compression w/ calq\n");
         uint32_t pos = sline.pos;
-        printf("%s\n", sline.cigar);
+        //printf("%s\n", sline.cigar);
         std::string cigar = sline.cigar;
         std::string seq = "";
         std::string qual = "";
@@ -861,7 +862,7 @@ void* decompress(void *thread_info){
       calq::QualDecoder qualDecoder;
       qualDecoder.readBlock(&fcq_);
  
-      printf("decoding..:");
+      //printf("decoding..:");
       for (auto const &samRecord : samRecords) {
          qualDecoder.decodeMappedRecordFromBlock(samRecord, &qualFile_);
       }

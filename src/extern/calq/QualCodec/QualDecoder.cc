@@ -111,7 +111,7 @@ void QualDecoder::decodeMappedRecordFromBlock(const SAMRecord &samRecord, File *
        }
        opLen = 0;
     }
-    printf("qual: %s\n", qual.c_str());
+    //printf("qual: %s\n", qual.c_str());
     qualFile->write((unsigned char *)qual.c_str(), qual.length());
     qualFile->writeByte('\n');
     
