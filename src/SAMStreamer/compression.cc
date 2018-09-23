@@ -729,9 +729,9 @@ void* compress(void *thread_info){
         compress_int(as, samBlock->codebook_model, LOSSLESS);
 
      int polyploidy_ = 2;
-     int qualityValueMax_ = 41;
-     int qualityValueMin_ = 0;
-     int qualityValueOffset_ = 33;
+     int qualityValueMax_ = opts.qualityValueMax;
+     int qualityValueMin_ = opts.qualityValueMin;
+     int qualityValueOffset_ = opts.qualityValueOffset;
 
     calq::CQFile cqFile("quality_values_calq", calq::File::MODE_WRITE);
     std::cout << samBlock->block_length << std::endl;
