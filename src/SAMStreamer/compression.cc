@@ -13,6 +13,7 @@
 #include <algorithm>
 #include "sam_block.h"
 #include "read_compression.h"
+#include <vector>
 
 #include "IO/SAM/SAMRecord.h"
 #include "QualCodec/QualEncoder.h"
@@ -226,7 +227,7 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
             }
         }
         // Compress sam line
-
+        //if(lineCtr<4000000) {return 1;}
         chr_change = compress_rname(as, samBlock->rnames->models, *samBlock->rnames->rnames);
 
         if (chr_change == 1){
@@ -267,10 +268,10 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
             std::string cigar = "";
             std::string seq = "";
             std::string qual = "";
-            //std::cout << "Counter: " << *cntr << std::endl;
-            //std::cout << "Counter: " << *cntr << std::endl;
-
+            //std::cout<< lineCtr%100000<<std::endl;
+           
             extract_SAM_data_for_calq(samBlock, &pos, &cigar, &seq, &qual);
+            //std::cout<< pos<<std::endl;
             calq::SAMRecord samRecord(pos, cigar, seq, qual);
             samRecords.push_back(samRecord);
             //qualEncoder.addMappedRecordToBlock(samRecord);
@@ -741,17 +742,15 @@ void* compress(void *thread_info){
     std::vector<calq::SAMRecord> samRecords;
     while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, info.compress_ref, as1, context, prefix, info.fsinchr, samRecords)) {
         ++lineCtr;
+        //printf("[cbc] compressed %llu lines\n", lineCtr);
         if (lineCtr % 100000 == 0) {
           if (info.calqmode){
             calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
-            //std::cout << "initialized qual encoder" << std::endl;
-             int i = 0;
+             
              for (auto const &samRecord : samRecords) {
-                     //std::cout << i << "/" << samRecords.size() << " ";
                      qualEncoder.addMappedRecordToBlock(samRecord);
-                     i++;
              }
-             //std::cout << "Sanity check" << std::endl;
+          
              qualEncoder.finishBlock();
              qualEncoder.writeBlock(&cqFile);
           }
@@ -762,6 +761,7 @@ void* compress(void *thread_info){
     if (info.calqmode){
       calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
       for (auto const &samRecord : samRecords) {
+
           qualEncoder.addMappedRecordToBlock(samRecord);
       }
       qualEncoder.finishBlock();
@@ -770,6 +770,7 @@ void* compress(void *thread_info){
     printf("[cbc] compressed %llu lines\n", lineCtr);
 
     samRecords.clear();
+  
     printf("done compressing lines\n");
     // Check if we are in the last block
     compress_rname(as, samBlock->rnames->models, "\n");

@@ -85,7 +85,11 @@ void QualEncoder::addUnmappedRecordToBlock(const SAMRecord &samRecord) {
 }
 
 void QualEncoder::addMappedRecordToBlock(const SAMRecord &samRecord) {
-    //CALQ_LOG("here i am");
+    /*if(chr_change) {
+        posOffset_ = samRecord.posMin;
+        samPileupDeque_.setPosMin(samRecord.posMin);
+        samPileupDeque_.setPosMax(samRecord.posMax);
+    }*/
     if (nrMappedRecords() == 0) {
         posOffset_ = samRecord.posMin;
         samPileupDeque_.setPosMin(samRecord.posMin);
@@ -103,7 +107,7 @@ void QualEncoder::addMappedRecordToBlock(const SAMRecord &samRecord) {
         mappedQuantizerIndices_.push_back(k);
         samPileupDeque_.pop_front();
     }
-
+  
     while (samRecordDeque_.front().posMax < samPileupDeque_.posMin()) {
         encodeMappedQual(samRecordDeque_.front());
         samRecordDeque_.pop_front();
@@ -216,9 +220,7 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
        }
        switch (samRecord.cigar[cigarIdx]) {
        case 'M':
-            break;
        case '=':
-            break;
        case 'X':
            // Encode opLen quality values with computed quantizer indices
            for (size_t i = 0; i < opLen; i++) {
@@ -230,7 +232,6 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
            }
            break;
        case 'I':
-            break;
        case 'S':
            // Encode opLen quality values with max quantizer index
            for (size_t i = 0; i < opLen; i++) {
@@ -240,17 +241,14 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
            }
            break;
        case 'D':
-            break;
        case 'N':
            quantizerIndicesIdx += opLen;
            break;  // do nothing as these bases are not present
        case 'H':
-           break;
        case 'P':
            break;  // these have been clipped
        default:
            throwErrorException("Bad CIGAR string");
-           break;
        }
        opLen = 0;
     }

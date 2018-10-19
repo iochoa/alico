@@ -69,6 +69,8 @@ void SAMRecord::addToPileupQueue(SAMPileupDeque *samPileupDeque_) const {
     if (samPileupDeque_->empty() == true) {
         throwErrorException("samPileupQueue is empty");
     }
+    //std::cout<<"min"<<samPileupDeque_->posMin()<< " "<<posMin<<std::endl;
+    //std::cout<<"max"<<samPileupDeque_->posMax()<< " "<<posMax<<std::endl;
     if ((samPileupDeque_->posMin() > posMin) || (samPileupDeque_->posMax() < posMax)) {
         throwErrorException("samPileupQueue does not overlap record");
     }
