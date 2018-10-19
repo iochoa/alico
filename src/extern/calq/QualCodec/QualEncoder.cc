@@ -216,7 +216,9 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
        }
        switch (samRecord.cigar[cigarIdx]) {
        case 'M':
+            break;
        case '=':
+            break;
        case 'X':
            // Encode opLen quality values with computed quantizer indices
            for (size_t i = 0; i < opLen; i++) {
@@ -228,6 +230,7 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
            }
            break;
        case 'I':
+            break;
        case 'S':
            // Encode opLen quality values with max quantizer index
            for (size_t i = 0; i < opLen; i++) {
@@ -237,14 +240,17 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
            }
            break;
        case 'D':
+            break;
        case 'N':
            quantizerIndicesIdx += opLen;
            break;  // do nothing as these bases are not present
        case 'H':
+           break;
        case 'P':
            break;  // these have been clipped
        default:
            throwErrorException("Bad CIGAR string");
+           break;
        }
        opLen = 0;
     }

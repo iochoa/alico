@@ -744,14 +744,14 @@ void* compress(void *thread_info){
         if (lineCtr % 100000 == 0) {
           if (info.calqmode){
             calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
-            std::cout << "initialized qual encoder" << std::endl;
+            //std::cout << "initialized qual encoder" << std::endl;
              int i = 0;
              for (auto const &samRecord : samRecords) {
-                     std::cout << i << "/" << samRecords.size() << " ";
+                     //std::cout << i << "/" << samRecords.size() << " ";
                      qualEncoder.addMappedRecordToBlock(samRecord);
                      i++;
              }
-             std::cout << "Sanity check" << std::endl;
+             //std::cout << "Sanity check" << std::endl;
              qualEncoder.finishBlock();
              qualEncoder.writeBlock(&cqFile);
           }

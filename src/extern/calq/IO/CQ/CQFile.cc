@@ -163,7 +163,7 @@ size_t CQFile::writeQuantizers(const std::map<int, Quantizer> &quantizers) {
         throwErrorException("lut is empty");
     }
 
-     CALQ_LOG("Writing quantizers");
+     //CALQ_LOG("Writing quantizers");
 
     size_t ret = 0;
 
@@ -190,13 +190,13 @@ size_t CQFile::writeQualBlock(unsigned char *block, const size_t &blockSize) {
         throwErrorException("blockSize must be greater than zero");
     }
 
-    CALQ_LOG("Writing block");
+    //CALQ_LOG("Writing block");
 
     size_t ret = 0;
 
     size_t nrBlocks = (size_t)ceil((double)blockSize / (double)(1*MB));
     ret = writeUint64((uint64_t)nrBlocks);
-    CALQ_LOG("Splitting block containing %zu byte(s) into %zu sub-block(s)", blockSize, nrBlocks);
+    //CALQ_LOG("Splitting block containing %zu byte(s) into %zu sub-block(s)", blockSize, nrBlocks);
 
     size_t encodedBytes = 0;
     while (encodedBytes < blockSize) {
