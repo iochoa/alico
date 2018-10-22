@@ -55,8 +55,9 @@ void reconstruct_ref(void *thread_info) {
 
   while(!feof(info->fsinchr)) {
     fgets(head, 1024, info->fsinchr);
-    fgets(num, 1024, info->fsinchr);
+    //fgets(num, 1024, info->fsinchr);
     if(prefix[0]=='F') {
+        fgets(num, 1024, info->fsinchr);
     	LCC=atoi(num);
     	fgets(tt1, 3, info->fsinchr);
     	fgets(tt2, 3, info->fsinchr);

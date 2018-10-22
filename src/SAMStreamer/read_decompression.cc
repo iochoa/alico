@@ -91,7 +91,8 @@ void itoa(uint32_t number, char* strin){
 }
 
 int store_reference_in_memory_com(FILE* refFile, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE* fsinchr){
-    uint32_t letterCount, endoffile = 1;
+    static string next_header = "";
+    uint32_t letterCount;
     uint64_t previous;
     char header[1024];
     char buf[1024];
@@ -104,14 +105,23 @@ int store_reference_in_memory_com(FILE* refFile, Arithmetic_stream as1, uint64_t
     letterCount = 0;
     
     // Remove the first header
+    if(!next_header.empty()) {
+       for(unsigned j=0;j<next_header.size();j++) {
+          fputc(next_header[j],fsinchr);
+       }
+    }
+    else {
     if (ftell(refFile) == 0) {
       fgets(header, sizeof(header), refFile);
       fprintf(fsinchr, "%s", header);
     }
+    }
     
     while (fgets(buf, 1024, refFile)) {
       if (buf[0] == '>' || reference[0] == '@') {
-        endoffile = 0;
+        if(buf[0] == '>') {
+           next_header = buf;
+         }
         break;
       }
       if(prefix[0]=='F') {
@@ -152,9 +162,6 @@ int store_reference_in_memory_com(FILE* refFile, Arithmetic_stream as1, uint64_t
     reference[letterCount] = '\0';
 
     reference = (char *) realloc(reference, letterCount + 1);
-    
-    if (endoffile)
-        return END_GENOME_FLAG;
     
     return letterCount;
     
