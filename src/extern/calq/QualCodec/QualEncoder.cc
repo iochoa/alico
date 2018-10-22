@@ -92,10 +92,11 @@ void QualEncoder::addMappedRecordToBlock(const SAMRecord &samRecord) {
     }*/
     if (nrMappedRecords() == 0) {
         posOffset_ = samRecord.posMin;
+        printf("%d\n",posOffset_);
         samPileupDeque_.setPosMin(samRecord.posMin);
         samPileupDeque_.setPosMax(samRecord.posMax);
     }
-
+    //printf("%d %d\n",samRecord.posMin,posOffset_);
     if (samRecord.posMax > samPileupDeque_.posMax()) {
         samPileupDeque_.setPosMax(samRecord.posMax);
     }
@@ -214,6 +215,7 @@ void QualEncoder::encodeMappedQual(const SAMRecord &samRecord) {
     size_t quantizerIndicesIdx = samRecord.posMin - posOffset_;
 
     for (cigarIdx = 0; cigarIdx < cigarLen; cigarIdx++) {
+       //printf("%c\n",samRecord.cigar[cigarIdx]);
        if (isdigit(samRecord.cigar[cigarIdx])) {
            opLen = opLen*10 + (size_t)samRecord.cigar[cigarIdx] - (size_t)'0';
            continue;

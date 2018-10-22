@@ -37,7 +37,7 @@ void reconstruct_ref(void *thread_info) {
   struct compressor_info_t *info = (struct compressor_info_t *)thread_info;
   Arithmetic_stream as = alloc_arithmetic_stream(info->mode, info->frefcom);
   char tt1[3],tt2[3];
-
+  //printf("rrr\n");
   char prefix[2]; prefix[0]='F'; prefix[1]='F';
   uint64_t context[25][6];
 
@@ -94,7 +94,7 @@ void reconstruct_ref(void *thread_info) {
     }
     if(total%LCC!=0) {fputc('\n',info->fref);}
   }
-
+  //printf("rrr\n");
   free_os_stream(as->ios);
   free(as);
 
@@ -171,13 +171,14 @@ static void extract_SAM_data_for_calq(sam_block samBlock, uint32_t * const pos, 
 }
 
 int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uint8_t lossiness, int calq, int compress_ref, Arithmetic_stream as1, uint64_t context[25][6], char* prefix, FILE * fsinchr, std::vector<calq::SAMRecord> &samRecords)  {
+    uint8_t chr_change;
     try {
          /*if (calq) {
             //Max33 Phred+33 [0,93]
                      //}*/
 
         static bool unmapped_reads = false;
-        uint8_t chr_change;
+        
         // Load the data from the file
         if(load_sam_line(samBlock)){
 
@@ -297,7 +298,7 @@ int compress_line(Arithmetic_stream as, sam_block samBlock, FILE *funmapped, uin
         abort();
     }
 
-    return 1;
+    return chr_change ? 2:1; 
 }
 
 int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness, uint8_t calqmode, std::vector<calq::SAMRecord> &samRecords,char prevname[1024]) {
@@ -376,7 +377,7 @@ int decompress_line(Arithmetic_stream as, sam_block samBlock, uint8_t lossiness,
     // printf("sline read length before printing is: %d\n", sline.readLength);
     print_line(&sline, 0, samBlock->fs);
     
-    return 1;
+    return chr_change ? 2:1;
 }
 
 int compress_most_common_list(Arithmetic_stream as, aux_block aux)
@@ -714,9 +715,10 @@ void* compress(void *thread_info){
     if (info.compress_ref){
         as1 = alloc_arithmetic_stream(info.mode, info.frefcom);
     }
+    
     // Allocs the different blocks and all the models for the Arithmetic
     sam_block samBlock = alloc_sam_models(as, info.fsam, info.fref, &opts, info.mode);
-
+    
     //idoia
     create_most_common_list(samBlock);
     compress_most_common_list(as, samBlock->aux);
@@ -736,26 +738,35 @@ void* compress(void *thread_info){
 
     calq::CQFile cqFile("quality_values_calq", calq::File::MODE_WRITE);
     std::cout << samBlock->block_length << std::endl;
-    cqFile.writeHeader(10000);
+    cqFile.writeHeader(100000);
 
     printf("start line compression\n");
     std::vector<calq::SAMRecord> samRecords;
-    while (compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, info.compress_ref, as1, context, prefix, info.fsinchr, samRecords)) {
+    int rc;
+    int upper;
+   
+    while (rc = compress_line(as, samBlock, info.funmapped, info.lossiness, info.calqmode, info.compress_ref, as1, context, prefix, info.fsinchr, samRecords)) {
         ++lineCtr;
         //printf("[cbc] compressed %llu lines\n", lineCtr);
-        if (lineCtr % 100000 == 0) {
+        if (rc == 2 || lineCtr % 100000 == 0) {
+          int i;
           if (info.calqmode){
+            if(rc==2) {
+               upper = samRecords.size()-1;
+            }
+            else {upper = samRecords.size();}
             calq::QualEncoder qualEncoder(polyploidy_, qualityValueMax_, qualityValueMin_, qualityValueOffset_);
-             
-             for (auto const &samRecord : samRecords) {
-                     qualEncoder.addMappedRecordToBlock(samRecord);
+             //std::cout<<upper<<std::endl;             
+             for (i=0; i<upper; i++) {
+                     qualEncoder.addMappedRecordToBlock(samRecords[i]);
              }
           
              qualEncoder.finishBlock();
              qualEncoder.writeBlock(&cqFile);
           }
+          //std::cout<<i<<std::endl;
           printf("[cbc] compressed %llu lines\n", lineCtr);
-          samRecords.clear();
+          samRecords.erase(samRecords.begin(),samRecords.begin()+upper);
         }
     }
     if (info.calqmode){
@@ -813,23 +824,33 @@ void* decompress(void *thread_info){
     char prevname[1024];
     clock_t begin = clock();
     clock_t ticks;
+    int upper;
+    int rc;
 
     printf("Decompression started \n");
     struct compressor_info_t *info = (struct compressor_info_t *)thread_info;
-
-    Arithmetic_stream as = alloc_arithmetic_stream(info->mode, info->fcomp);
     
-    calq::CQFile fcq_(info->cq_name, calq::CQFile::MODE_READ);
-    size_t blockSize = 10000;  
+    Arithmetic_stream as = alloc_arithmetic_stream(info->mode, info->fcomp);
+    //string tmp = "";
+    //if(info->calqmode) { 
+       calq::CQFile fcq_(info->cq_name, calq::CQFile::MODE_READ);
+     //}
+    /*else {
+      calq::CQFile fcq_(); 
+    }*/
     calq::File qualFile_("Calq_Output.txt", calq::File::MODE_WRITE);
- 
+   
+    size_t blockSize = 100000;  
+    //calq::File qualFile_("Calq_Output.txt", calq::File::MODE_WRITE);
+   
     if (info->calqmode){
         printf("Reading cq file Info of %s\n", info->cq_name);
         fcq_.readHeader(&blockSize);
+        size_t blockSize = 100000;
     }   
-
+   
     sam_block samBlock = alloc_sam_models(as, info->fsam, info->fref, info->qv_opts, DECOMPRESSION);
-  
+    printf("1111\n");
     decompress_most_common_list(as, samBlock->aux);
 
     info->lossiness = decompress_int(as, samBlock->codebook_model);
@@ -841,23 +862,25 @@ void* decompress(void *thread_info){
     }
     // Decompress the blocks
     std::vector<calq::SAMRecord> samRecords;
-    while(decompress_line(as, samBlock, info->lossiness, info->calqmode, samRecords,prevname)){
+    while(rc = decompress_line(as, samBlock, info->lossiness, info->calqmode, samRecords,prevname)){
         n++;
-        //std::cout << n << " / " << blockSize << std::endl;
-         if (n % blockSize == 0 && info->calqmode) {
+         if (n % 100000 == 0 || rc ==2) {
+             unsigned i;
+             if(info->calqmode) {
              calq::QualDecoder qualDecoder;
              qualDecoder.readBlock(&fcq_);
-            for (auto const &samRecord : samRecords) {
-                qualDecoder.decodeMappedRecordFromBlock(samRecord, &qualFile_);
+             upper = samRecords.size();
+             if(rc==2) {upper--;}
+           
+            for (i=0; i<upper; i++) {
+                qualDecoder.decodeMappedRecordFromBlock(samRecords[i], &qualFile_);
             }
-            samRecords.clear();
-            n = 0;
-        }
-        if (n % 100000 == 0){
+            
+            samRecords.erase(samRecords.begin(),samRecords.begin()+upper);
+            }
             printf("decompressed %llu lines\n", n);
         }
     }
-    printf("decompressed %llu lines\n", n);
 
     if (info->calqmode) {
       calq::QualDecoder qualDecoder;
@@ -867,7 +890,9 @@ void* decompress(void *thread_info){
       for (auto const &samRecord : samRecords) {
          qualDecoder.decodeMappedRecordFromBlock(samRecord, &qualFile_);
       }
-    }   
+    }
+
+    printf("decompressed %llu lines\n", n);   
 
     n += samBlock->block_length;
     free_os_stream(as->ios);

@@ -39,7 +39,7 @@ uint32_t get_read_length(FILE *f){
         fgets(buffer, 10000, f);
         header_bytes += strlen(buffer) + 1; // +1 to account for the @
     }
-    
+       
     // rewind the file pointer to be at the beginning of the first read
     fseek(f, header_bytes, SEEK_SET);
     
@@ -58,12 +58,11 @@ uint32_t get_read_length(FILE *f){
     }
     // Now we are in a read with no HARD clips, so we get the read and its length
     fscanf(f, "%*s %*d %*d %s", buffer);
-    
     //fscanf(f, "%*s %*d %*s %*d %*d %*s %*s %*d %*d %s", buffer);
     
     // rewind the file pointer to be at the beginning of the first read
     fseek(f, header_bytes, SEEK_SET);
-    
+    //printf("%d\n",strlen(buffer));
     
     return (uint32_t)strlen(buffer);
     
@@ -346,11 +345,11 @@ sam_block alloc_sam_models(Arithmetic_stream as, FILE * fin, FILE *fref, struct 
     sb->fs = fin;
     
     sb->fref = fref;
-    
+   
     // initialize the codebook_model
     uint32_t rescale = 1 << 20;
     sb->codebook_model = initialize_stream_model_codebook(rescale);
-    
+       
     // Get the Read Length
     if (mode == DECOMPRESSION || mode == DOWNLOAD) {
         // get the readLength from the ios buffer
@@ -359,13 +358,14 @@ sam_block alloc_sam_models(Arithmetic_stream as, FILE * fin, FILE *fref, struct 
     else{
         // get the read length from input file and move file pointer after headers
         sb->read_length = get_read_length(sb->fs);
+         printf("%d\n",sb->read_length); 
         // write readLength directly to AS using the codebook model
         compress_int(as, sb->codebook_model, sb->read_length);
     }
     
     
     // Allocate the memory for the three parts:
-    
+  
     //READS,
     sb->reads = alloc_read_block_t(sb->read_length);
     

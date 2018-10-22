@@ -17,6 +17,7 @@ namespace calq {
 
 class CQFile : public File {
  public:
+    CQFile();
     CQFile(const std::string &path, const Mode &mode);
     ~CQFile(void);
 

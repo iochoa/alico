@@ -18,6 +18,7 @@
 #include "Compressors/range/range.h"
 
 namespace calq {
+CQFile::CQFile() {}
 
 CQFile::CQFile(const std::string &path, const Mode &mode)
     : File(path, mode),

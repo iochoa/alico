@@ -408,6 +408,7 @@ int main(int argc, const char * argv[]) {
             break;
                           }
         case DECOMPRESSION: {
+          
             comp_info.fsam = fopen(output_name, "w");
             if (comp_info.decompress_ref) {
                 change_dir(input_name);
@@ -428,14 +429,16 @@ int main(int argc, const char * argv[]) {
                 fputs ("File error while opening ref and sam files\n",stderr);
                 exit (1);
             }
+           
             if (comp_info.decompress_ref) {
-                printf("hi");
+                //printf("%d\n",comp_info.decompress_ref);
+                //printf("hi");
                 reconstruct_ref((void *)&comp_info);
+                //printf("%d\n",comp_info.decompress_ref);
                 fseek(comp_info.fref, 0, SEEK_SET);
                 fclose(comp_info.frefcom);
                 fclose(comp_info.fsinchr);
-                                printf("hi");
-
+                //printf("hi");
             }
 
             pid_t pid = fork();
