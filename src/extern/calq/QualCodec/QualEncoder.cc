@@ -92,7 +92,7 @@ void QualEncoder::addMappedRecordToBlock(const SAMRecord &samRecord) {
     }*/
     if (nrMappedRecords() == 0) {
         posOffset_ = samRecord.posMin;
-        printf("%d\n",posOffset_);
+        //printf("%d\n",posOffset_);
         samPileupDeque_.setPosMin(samRecord.posMin);
         samPileupDeque_.setPosMax(samRecord.posMax);
     }

@@ -164,7 +164,7 @@ void SAMRecord::computeMappingPositions(void)
         uint32_t opLen = 0;  // length of current CIGAR operation
 
         for (cigarIdx = 0; cigarIdx < cigarLen; cigarIdx++) {
-            std::cout<<cigar[cigarIdx]<<std::endl;
+            //std::cout<<cigar[cigarIdx]<<std::endl;
             if (isdigit(cigar[cigarIdx])) {
                 opLen = opLen * 10 + (uint32_t)cigar[cigarIdx] - (uint32_t)'0';
                 continue;
