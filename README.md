@@ -1,6 +1,6 @@
-This README file will detail the usage and purpose of the SAMStreamer.
+This README file will detail the usage and purpose of the SAMStreamer AliCo.
 
-The SAMStreamer is a compressor and decompressor for SAM files and reference files. It can be downloaded from github.com/iochoa/Streamer_SAMfiles.
+AliCo is a compressor and decompressor for SAM files and reference files. It can be downloaded from github.com/iochoa/Streamer_SAMfiles.
 
 To make the program, download the code from GitHub. Make sure to have a version of cmake 3.5.0 or more recent installed and loaded. Make sure to be in the directory "Streamer_SAMfiles". The best practice for cmake is to create an empty directory "build-dir", change to that directory, and run "cmake .." to create the Makefile in "Streamer_SAMfiles". When that is done, change to the parent directory and simply run "make" to create the executable program SAMStreamer.
 
