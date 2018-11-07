@@ -1,4 +1,4 @@
-This README file will detail the usage and purpose of the SAMStreamer AliCo.
+This README file will detail the usage and purpose of the SAM compressor AliCo.
 
 AliCo is a compressor and decompressor for SAM files and reference files. It can be downloaded from github.com/iochoa/Streamer_SAMfiles.
 
