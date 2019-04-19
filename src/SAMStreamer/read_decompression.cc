@@ -317,6 +317,7 @@ uint32_t decompress_pos(Arithmetic_stream as, stream_model *P, stream_model *PA,
         
         // Update the statistics of the alphabet for x
         P[0]->alphaExist[x] = 1;
+if(x >= P[0]->alphaMap_size) {P[0]->alphaMap = ((int32_t*) realloc(P[0]->alphaMap, (x+1)*sizeof(int32_t))); P[0]->alphaMap_size=x+1;}
         P[0]->alphaMap[x] = P[0]->alphabetCard; // We reserve the bin 0 for the new symbol flag
         P[0]->alphabet[P[0]->alphabetCard] = x;
         
