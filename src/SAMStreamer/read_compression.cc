@@ -33,13 +33,13 @@ uint32_t compress_read(Arithmetic_stream as, read_models models, read_line samLi
         compress_uint8t(as, models->rlength[k], maskedReadVal);
     }
     //printf("read length is: %d\n", models->read_length);
- 
+
     // Compress sam line
     PosDiff = compress_pos(as, models->pos, models->pos_alpha, samLine->pos, chr_change);
     tempF = compress_flag(as, models->flag, samLine->invFlag);
     //tempF = compress_flag(as, models->flag, 0);
     chrPos = compress_edits(as, models, samLine->edits, samLine->cigar, samLine->read, samLine->pos, PosDiff, tempF, &(samLine->cigarFlags));
-    
+
     if (VERIFY) assert(samLine->pos  == chrPos);
 
     return 1;
@@ -50,85 +50,85 @@ uint32_t compress_read(Arithmetic_stream as, read_models models, read_line samLi
  * Compress the Flag
  **********************/
 uint32_t compress_flag(Arithmetic_stream a, stream_model *F, uint16_t flag){
-    
-    
+
+
     // In this case we need to compress the whole flag, althugh the binary information of whether the
     // read is in reverse or not is the most important. Thus, we return the binary info.
     //we use F[0] as there is no context for the flag.
-    
+
     uint16_t x = 0;
-    
+
     x = flag << 11;
     x >>= 15;
-    
+
     // Send the value to the Arithmetic Stream
     send_value_to_as(a, F[0], flag);
-    
+
     // Update model
     update_model(F[0], flag);
-    
+
     return x;
-    
+
 }
 
 /***********************************
  * Compress the Alphabet of Position
  ***********************************/
 uint32_t compress_pos_alpha(Arithmetic_stream as, stream_model *PA, uint32_t x){
-    
+
     uint32_t Byte = 0;
-    
+
     // we encode byte per byte i.e. x = [B0 B1 B2 B3]
-    
+
     // Send B0 to the Arithmetic Stream using the alphabet model
     Byte = x >> 24;
     send_value_to_as(as, PA[0], Byte);
     // Update model
     update_model(PA[0], Byte);
-    
+
     // Send B1 to the Arithmetic Stream using the alphabet model
     Byte = (x & 0x00ff0000) >> 16;
     send_value_to_as(as, PA[1], Byte);
     // Update model
     update_model(PA[1], Byte);
-    
+
     // Send B2 to the Arithmetic Stream using the alphabet model
     Byte = (x & 0x0000ff00) >> 8;
     send_value_to_as(as, PA[2], Byte);
     // Update model
     update_model(PA[2], Byte);
-    
+
     // Send B3 to the Arithmetic Stream using the alphabet model
     Byte = (x & 0x000000ff);
     send_value_to_as(as, PA[3], Byte);
     // Update model
     update_model(PA[3], Byte);
-    
+
     return 1;
-    
-    
+
+
 }
 
 /***********************
  * Compress the Position
  **********************/
 uint32_t compress_pos(Arithmetic_stream as, stream_model *P, stream_model *PA, uint32_t pos, uint8_t chr_change){
-    
+
     static uint32_t prevPos = 0;
     enum {SMALL_STEP = 0, BIG_STEP = 1};
     int32_t x = 0;
-    
+
     // TODO diferent update models for updating -1 and already seen symbols
     // i.e., SMALL_STEP and BIG_STEP
-    
+
     // Check if we are changing chromosomes.
     if (chr_change)
         prevPos = 0;
-    
-    
+
+
     // Compress the position diference (+ 1 to reserve 0 for new symbols)
     x = pos - prevPos + 1;
-    
+
     if (P[0]->alphaExist[x]){
         // Send x to the Arithmetic Stream
         send_value_to_as(as, P[0], P[0]->alphaMap[x]);
@@ -136,27 +136,29 @@ uint32_t compress_pos(Arithmetic_stream as, stream_model *P, stream_model *PA, u
         update_model(P[0], P[0]->alphaMap[x]);
     }
     else{
-        
+
         // Send 0 to the Arithmetic Stream
         send_value_to_as(as, P[0], 0);
-        
+
         // Update model
         update_model(P[0], 0);
-        
+
         // Send the new letter to the Arithmetic Stream using the alphabet model
         compress_pos_alpha(as, PA, x);
-        
+
         // Update the statistics of the alphabet for x
         P[0]->alphaExist[x] = 1;
+
+        if(x >= P[0]->alphaMap_size) {P[0]->alphaMap = ((int32_t*) realloc(P[0]->alphaMap, (x+1)*sizeof(int32_t)));}
         P[0]->alphaMap[x] = P[0]->alphabetCard; // We reserve the bin 0 for the new symbol flag
         P[0]->alphabet[P[0]->alphabetCard] = x;
-        
+
         // Update model
         update_model(P[0], P[0]->alphabetCard++);
     }
-    
+
     prevPos = pos;
-    
+
     return x;
 }
 
@@ -164,28 +166,28 @@ uint32_t compress_pos(Arithmetic_stream as, stream_model *P, stream_model *PA, u
  * Compress the match
  *****************************/
 uint32_t compress_match(Arithmetic_stream a, stream_model *M, uint8_t match, uint32_t P){
-    
+
     uint32_t ctx = 0;
     static uint8_t  prevM = 0;
-    
-    
+
+
     // Compute Context
     P = (P != 1)? 0:1;
     //prevP = (prevP > READ_LENGTH)? READ_LENGTH:prevP;
     //prevP = (prevP > READ_LENGTH/4)? READ_LENGTH:prevP;
-    
+
     ctx = (P << 1) | prevM;
-    
+
     //ctx = 0;
-    
+
     // Send the value to the Arithmetic Stream
     send_value_to_as(a, M[ctx], match);
-    
+
     // Update model
     update_model(M[ctx], match);
-    
+
     prevM = match;
-    
+
     return 1;
 }
 
@@ -193,18 +195,18 @@ uint32_t compress_match(Arithmetic_stream a, stream_model *M, uint8_t match, uin
  * Compress the snps
  *************************/
 uint32_t compress_snps(Arithmetic_stream a, stream_model *S, uint8_t numSnps){
-    
-    
+
+
     // No context is used for the numSnps for the moment.
-    
+
     // Send the value to the Arithmetic Stream
     send_value_to_as(a, S[0], numSnps);
-    
+
     // Update model
     update_model(S[0], numSnps);
-    
+
     return 1;
-    
+
 }
 
 
@@ -212,60 +214,60 @@ uint32_t compress_snps(Arithmetic_stream a, stream_model *S, uint8_t numSnps){
  * Compress the indels
  *******************************/
 uint32_t compress_indels(Arithmetic_stream a, stream_model *I, uint8_t numIndels){
-    
-    
+
+
     // Nos context is used for the numIndels for the moment.
-    
+
     // Send the value to the Arithmetic Stream
     send_value_to_as(a, I[0], numIndels);
-    
+
     // Update model
     update_model(I[0], numIndels);
-    
+
     return 1;
-    
+
 }
 
 /*******************************
  * Compress the variations
  ********************************/
 uint32_t compress_var(Arithmetic_stream a, stream_model *v, uint32_t pos, uint32_t prevPos, uint32_t flag){
-    
+
     uint32_t ctx = 0;
-    
+
     //flag = 0;
     ctx = prevPos << 1 | flag;
-    
+
     // Send the value to the Arithmetic Stream
     send_value_to_as(a, v[ctx], pos);
-    
+
     // Update model
     update_model(v[ctx], pos);
-    
+
     return 1;
-    
+
 }
 
 /*****************************************
  * Compress the chars
  ******************************************/
 uint32_t compress_chars(Arithmetic_stream a, stream_model *c, enum BASEPAIR ref, enum BASEPAIR target){
-    
+
     // Send the value to the Arithmetic Stream
     send_value_to_as(a, c[ref], target);
-    
+
     // Update model
     update_model(c[ref], target);
-    
+
     return 1;
-    
+
 }
 
 /*****************************************
  * Compress the edits
  ******************************************/
 uint32_t compress_edits(Arithmetic_stream as, read_models rs, char *edits, char *cigar, char *read, uint32_t P, uint32_t deltaP, uint8_t flag, uint8_t* cigarFlags){
-    
+
     uint32_t i = 0;
     uint32_t Dels[MAX_READ_LENGTH];
     ins Insers[MAX_READ_LENGTH];
@@ -278,10 +280,10 @@ uint32_t compress_edits(Arithmetic_stream as, read_models rs, char *edits, char 
 
     // pos in the reference
     cumsumP = cumsumP + deltaP - 1;// DeltaP is 1-based
-    
+
     uint32_t prev_pos = 0;
     uint32_t delta = 0;
-    
+
     // Check if read matches reference
     bool matches = true;
     for (i = 0; i < rs->read_length; i++) {
@@ -323,7 +325,7 @@ uint32_t compress_edits(Arithmetic_stream as, read_models rs, char *edits, char 
     }
 
     compress_match(as, rs->match, 0, deltaP);
-    
+
     // Compress the edits
     if ((numDels | numIns) == 0) {
         compress_snps(as, rs->snps, numSnps);
@@ -337,7 +339,7 @@ uint32_t compress_edits(Arithmetic_stream as, read_models rs, char *edits, char 
 
     // Store the positions and Chars in the corresponding vector
     prev_pos = 0;
-    
+
     for (i = 0; i < numDels; i++){
         if (VERIFY) assert(prev_pos < rs->read_length);
         Dels[i] = Dels[i] - prev_pos;
@@ -354,7 +356,7 @@ uint32_t compress_edits(Arithmetic_stream as, read_models rs, char *edits, char 
         if (DEBUG) printf("Insert %c at offset %d, prev_pos %d\n", basepair2char(Insers[i].targetChar), Insers[i].pos, prev_pos);
         prev_pos += Insers[i].pos;
     }
-    
+
 
     prev_pos = 0;
     for (i = 0; i < numSnps; i++){
@@ -362,7 +364,7 @@ uint32_t compress_edits(Arithmetic_stream as, read_models rs, char *edits, char 
         delta = compute_delta_to_first_snp(prev_pos + 1, rs->read_length);
 
         delta = (delta << BITS_DELTA);
-        compress_var(as, rs->var, SNPs[i].pos, delta + prev_pos, flag); 
+        compress_var(as, rs->var, SNPs[i].pos, delta + prev_pos, flag);
         snpInRef[cumsumP - 1 + prev_pos + SNPs[i].pos] = 1;
 
         compress_chars(as, rs->chars, SNPs[i].refChar, SNPs[i].targetChar);
@@ -380,23 +382,23 @@ uint32_t compress_edits(Arithmetic_stream as, read_models rs, char *edits, char 
         *cigarFlags = 1;
     }
     return cumsumP;
-    
+
 }
 
 uint32_t compute_delta_to_first_snp(uint32_t prevPos, uint32_t readLen){
-    
+
     uint32_t deltaOut;
     uint32_t j = 0;
-    
+
     deltaOut = readLen + 2;
-    
+
     for (j=0;j<readLen - prevPos; j++){
         if (snpInRef[cumsumP - 1 + j + prevPos] == 1){
             deltaOut = j;
             break;
         }
     }
-    
+
     return deltaOut;
 }
 
@@ -442,7 +444,7 @@ void absolute_to_relative(uint32_t *Dels, uint32_t numDels, ins *Insers, uint32_
 
     for (i = 1; i < numDels; i++) {
         Dels[i] = Dels[i] - prev_pos;
-        prev_pos += Dels[i]; 
+        prev_pos += Dels[i];
     }
 
     if (numIns > 0) {
@@ -451,7 +453,7 @@ void absolute_to_relative(uint32_t *Dels, uint32_t numDels, ins *Insers, uint32_
 
     for (i = 1; i < numIns; i++) {
         Insers[i].pos = Insers[i].pos - prev_pos;
-        prev_pos += Insers[i].pos; 
+        prev_pos += Insers[i].pos;
     }
 
     /*

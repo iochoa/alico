@@ -19,10 +19,11 @@ typedef struct stream_model_t {
     uint32_t step;
     uint32_t n;
     uint32_t rescale;
-    
+
     // variables for the ppm0 implementation
     int32_t *alphabet;
     int32_t *alphaMap;
+    int32_t alphaMap_size;
     uint8_t *alphaExist;
 } *stream_model;
 
